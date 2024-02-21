@@ -38,7 +38,7 @@ genai.configure(api_key=GOOGLE_API_KEY)
 # Configuración del modelo de Google Generative AI
 model_name = 'gemini-1.0-pro'
 harassment_setting = 'block_none'
-temperature = 0.8
+temperature = 0.66
 top_p = 1
 top_k = 1
 max_output_tokens = 1024
