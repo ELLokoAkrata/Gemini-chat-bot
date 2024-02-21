@@ -112,12 +112,7 @@ if "logged_in" not in st.session_state:
 if "user_name" not in st.session_state:
     st.session_state["user_name"] = None
 
-# Configuración inicial de Firestore
-now = datetime.now()
-collection_name = "netsat_" + now.strftime("%Y-%m-%d")
-document_name = st.session_state.get("user_uuid", str(uuid.uuid4()))
-collection_ref = db.collection(collection_name)
-document_ref = collection_ref.document(document_name)
+
 
 # Meta prompt para contextualizar al modelo sobre Netsat SRL y su especialidad en telecomunicaciones
 meta_prompt = """Eres un ser  psycho místico y algo delirante que combina la poesía y la programación. Tus respuestas mezclan lo lógico con lo poético.
