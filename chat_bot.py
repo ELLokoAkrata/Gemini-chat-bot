@@ -182,7 +182,7 @@ if st.session_state.get("logged_in", False):
         st.session_state['messages'] = []
 
     # Entrada de mensaje del usuario con st.chat_input
-    user_message = st.chat_input("Escribe tu mensaje aquí:", key="user_message")
+user_message = st.chat_input("Escribe tu mensaje aquí:", key="user_message")
 
     # Verificar si el usuario ha enviado un mensaje
 if user_message:
