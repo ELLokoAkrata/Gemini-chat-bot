@@ -160,7 +160,7 @@ if not st.session_state.get("logged_in", False):
         st.session_state["logged_in"] = True
 
         # Forzar a Streamlit a reejecutar el script aquí también después de crear un nuevo usuario
-        st.experimental_rerun()
+        st.rerun()
 
 user_message = ''  # Inicializar user_message antes de su primer uso
 
@@ -231,5 +231,5 @@ if st.session_state.get("logged_in", False):
         # Mensaje de sesión cerrada y re-ejecución del script para actualizar la interfaz de usuario
         st.write("Sesión cerrada. ¡Gracias por usar el bot!")
         st.session_state["logged_in"] = False  # Asegúrate de restablecer el estado de "logged_in"
-        st.experimental_rerun()
+        st.rerun()
 
