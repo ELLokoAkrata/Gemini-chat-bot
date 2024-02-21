@@ -101,7 +101,7 @@ Guía para usar el bot:
 
 5) Siempre usa el mismo nombre de sesión, esto te ayudará a recuperar la sesión.
 
-6)Disfruta y pregunta lo que quieras preguntar.
+6) Disfruta y pregunta lo que quieras preguntar.
 
 Código fuente en el siguiente repositorio: https://github.com/RDvibe/Gemini-chat-bot/tree/main""")
 
