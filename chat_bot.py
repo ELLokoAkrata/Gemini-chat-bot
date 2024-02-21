@@ -219,7 +219,7 @@ if user_message:
         # Mostrar la respuesta de la IA inmediatamente
         st.write("IA:", ia_message)
 
-# Gestión del cierre de sesión
+# Gestión del cierre de sesión dentro del bloque de usuario "logged_in"
 if st.button("Cerrar Sesión"):
     keys_to_keep = []  # Lista de claves del estado de sesión a mantener
 
@@ -230,6 +230,6 @@ if st.button("Cerrar Sesión"):
 
     # Mensaje de sesión cerrada y re-ejecución del script para actualizar la interfaz de usuario
     st.write("Sesión cerrada. ¡Gracias por usar el bot!")
-    st.rerun()
-
+    st.session_state["logged_in"] = False  # Asegúrate de restablecer el estado de "logged_in"
+    st.experimental_rerun()
 
