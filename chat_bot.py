@@ -212,7 +212,7 @@ if st.session_state.get("logged_in", False):
             document_ref.set({'messages': st.session_state['messages']})
 
             # Mostrar la respuesta de la IA inmediatamente
-            st.write("IA:", ia_message)
+            st.write("IA (mensaje actual):", ia_message)
 
     # Gestión del cierre de sesión dentro del bloque de usuario "logged_in"
     if st.button("Cerrar Sesión"):
