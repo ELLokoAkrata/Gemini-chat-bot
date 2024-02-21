@@ -95,7 +95,7 @@ Guía para usar el bot:
 
 2) Luego de iniciar sesión, escribe tu mensaje en la casilla especial y presiona el botón enviar.
 
-3) Luego espera la respuesta, y después de que el bot responda, borra el mensaje y escribe tu nuevo mensaje.
+3) Luego espera la respuesta, y después de que el bot responda podrás escribir tu nuevo mensaje.
 
 4) Cuando ya no quieras hablar con el bot, cierra sesión.
 
