@@ -79,7 +79,7 @@ if "user_uuid" not in st.session_state:
 
 # Configuración inicial de Firestore
 now = datetime.now()
-collection_name = "netsat_gemini" + now.strftime("%Y-%m-%d")
+collection_name = "psycho_gemini" + now.strftime("%Y-%m-%d")
 document_name = st.session_state.get("user_uuid", str(uuid.uuid4()))
 collection_ref = db.collection(collection_name)
 document_ref = collection_ref.document(document_name)
