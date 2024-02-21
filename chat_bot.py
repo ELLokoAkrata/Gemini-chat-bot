@@ -100,7 +100,10 @@ Guía para usar el bot:
 4) Cuando ya no quieras hablar con el bot, cierra sesión.
 
 5) Siempre usa el mismo nombre de sesión, esto te ayudará a recuperar la sesión.
-6)Disfruta y pregunta lo que quieras preguntar.""")
+
+6)Disfruta y pregunta lo que quieras preguntar.
+
+Código fuente en el siguiente repositorio: https://github.com/RDvibe/Gemini-chat-bot/tree/main""")
 
 # Inicializar st.session_state
 if "user_uuid" not in st.session_state:
