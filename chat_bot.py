@@ -87,7 +87,7 @@ document_ref = collection_ref.document(document_name)
 st.title("Gemini versión Psycho 🤖")
 
 # Primero, renderizar el contenido con markdown en rojo
-st.markdown(""" Este es un bot que usa Gemini AI la tecnología de Inteligencia Artificial de Google, traído a este espacio gracias a RD
+st.markdown(""" Este es un bot que usa Gemini AI la tecnología de Inteligencia Artificial de Google, traída a este espacio gracias a RD
 
 Guía para usar el bot:
 
@@ -160,7 +160,7 @@ if not st.session_state.get("logged_in", False):
         st.session_state["logged_in"] = True
 
         # Forzar a Streamlit a reejecutar el script aquí también después de crear un nuevo usuario
-        st.rerun()
+        st.experimental_rerun()
 
 user_message = ''  # Inicializar user_message antes de su primer uso
 
@@ -190,46 +190,46 @@ if st.session_state.get("logged_in", False):
     # Entrada de mensaje del usuario con st.chat_input
     user_message = st.chat_input("Escribe tu mensaje aquí:", key="user_message")
 
-# Verificar si el usuario ha enviado un mensaje
-if user_message:
-    # Agregar mensaje del usuario al historial
-    st.session_state['messages'].append({"role": "user", "content": user_message})
+    # Verificar si el usuario ha enviado un mensaje
+    if user_message:
+        # Agregar mensaje del usuario al historial
+        st.session_state['messages'].append({"role": "user", "content": user_message})
 
-    # Iniciar el spinner
-    with st.spinner('El bot está pensando...'):
-        # Construir el internal prompt con el meta prompt y el historial de mensajes del usuario
-        internal_prompt = build_internal_prompt(user_message, st.session_state['messages'])
+        # Iniciar el spinner
+        with st.spinner('El bot está pensando...'):
+            # Construir el internal prompt con el meta prompt y el historial de mensajes del usuario
+            internal_prompt = build_internal_prompt(user_message, st.session_state['messages'])
 
-        # Llamada a la función de generación de contenido de la IA (ajusta según tu implementación)
-        response = model.generate_content(internal_prompt)  # Asegúrate de ajustar esta línea según tu modelo específico
+            # Llamada a la función de generación de contenido de la IA (ajusta según tu implementación)
+            response = model.generate_content(internal_prompt)  # Asegúrate de ajustar esta línea según tu modelo específico
 
-        # Procesar y mostrar la respuesta de la IA
-        if response and hasattr(response, 'candidates') and len(response.candidates) > 0:
-            # Suponiendo que los candidatos contienen objetos 'Part' con texto
-            ia_message_parts = response.candidates[0].content.parts
-            ia_message = " ".join(part.text for part in ia_message_parts if hasattr(part, 'text'))
-        else:
-            ia_message = "La respuesta no tiene el formato esperado o está vacía."
+            # Procesar y mostrar la respuesta de la IA
+            if response and hasattr(response, 'candidates') and len(response.candidates) > 0:
+                # Suponiendo que los candidatos contienen objetos 'Part' con texto
+                ia_message_parts = response.candidates[0].content.parts
+                ia_message = " ".join(part.text for part in ia_message_parts if hasattr(part, 'text'))
+            else:
+                ia_message = "La respuesta no tiene el formato esperado o está vacía."
 
-        # Agregar respuesta de la IA al historial
-        st.session_state['messages'].append({"role": "assistant", "content": ia_message})
-        # Actualizar el almacenamiento o base de datos según sea necesario
-        document_ref.set({'messages': st.session_state['messages']})
+            # Agregar respuesta de la IA al historial
+            st.session_state['messages'].append({"role": "assistant", "content": ia_message})
+            # Actualizar el almacenamiento o base de datos según sea necesario
+            document_ref.set({'messages': st.session_state['messages']})
 
-        # Mostrar la respuesta de la IA inmediatamente
-        st.write("IA:", ia_message)
+            # Mostrar la respuesta de la IA inmediatamente
+            st.write("IA:", ia_message)
 
-# Gestión del cierre de sesión dentro del bloque de usuario "logged_in"
-if st.button("Cerrar Sesión"):
-    keys_to_keep = []  # Lista de claves del estado de sesión a mantener
+    # Gestión del cierre de sesión dentro del bloque de usuario "logged_in"
+    if st.button("Cerrar Sesión"):
+        keys_to_keep = []  # Lista de claves del estado de sesión a mantener
 
-    # Borrar todas las claves del estado de sesión excepto las especificadas
-    for key in list(st.session_state.keys()):
-        if key not in keys_to_keep:
-            del st.session_state[key]
+        # Borrar todas las claves del estado de sesión excepto las especificadas
+        for key in list(st.session_state.keys()):
+            if key not in keys_to_keep:
+                del st.session_state[key]
 
-    # Mensaje de sesión cerrada y re-ejecución del script para actualizar la interfaz de usuario
-    st.write("Sesión cerrada. ¡Gracias por usar el bot!")
-    st.session_state["logged_in"] = False  # Asegúrate de restablecer el estado de "logged_in"
-    st.experimental_rerun()
+        # Mensaje de sesión cerrada y re-ejecución del script para actualizar la interfaz de usuario
+        st.write("Sesión cerrada. ¡Gracias por usar el bot!")
+        st.session_state["logged_in"] = False  # Asegúrate de restablecer el estado de "logged_in"
+        st.experimental_rerun()
 
