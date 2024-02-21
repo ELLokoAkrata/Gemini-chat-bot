@@ -84,7 +84,7 @@ document_name = st.session_state.get("user_uuid", str(uuid.uuid4()))
 collection_ref = db.collection(collection_name)
 document_ref = collection_ref.document(document_name)
 
-st.title("Gemini versión Psycho 🤖")
+st.title("Gemini la versión Psycho 🤖")
 
 # Primero, renderizar el contenido con markdown en rojo
 st.markdown(""" Este es un bot que usa Gemini AI la tecnología de Inteligencia Artificial de Google, traída a este espacio gracias a RD
