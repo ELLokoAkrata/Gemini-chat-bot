@@ -154,6 +154,8 @@ if not st.session_state.get("logged_in", False):
         # Forzar a Streamlit a reejecutar el script aquí también después de crear un nuevo usuario
         st.rerun()
 
+user_message = ''  # Inicializar user_message antes de su primer uso
+
 # Solo mostrar la interfaz si el usuario está "logged_in"
 if st.session_state.get("logged_in", False):
     st.write(f"Bienvenido de nuevo, {st.session_state.get('user_name', 'Usuario')}!")
@@ -177,21 +179,16 @@ if st.session_state.get("logged_in", False):
                 with col2:
                     st.success(msg['content'])  # Usa st.success para los mensajes de la IA
 
-    # Inicialización del historial de mensajes si es necesario
-    if 'messages' not in st.session_state:
-        st.session_state['messages'] = []
-
     # Entrada de mensaje del usuario con st.chat_input
-user_message = st.chat_input("Escribe tu mensaje aquí:", key="user_message")
+    user_message = st.chat_input("Escribe tu mensaje aquí:", key="user_message")
 
-    # Verificar si el usuario ha enviado un mensaje
+# Verificar si el usuario ha enviado un mensaje
 if user_message:
     # Agregar mensaje del usuario al historial
     st.session_state['messages'].append({"role": "user", "content": user_message})
 
     # Iniciar el spinner
     with st.spinner('El bot está pensando...'):
-
         # Construir el internal prompt con el meta prompt y el historial de mensajes del usuario
         internal_prompt = build_internal_prompt(user_message, st.session_state['messages'])
 
@@ -214,16 +211,17 @@ if user_message:
         # Mostrar la respuesta de la IA inmediatamente
         st.write("IA:", ia_message)
 
-    # Gestión del cierre de sesión
-    if st.button("Cerrar Sesión"):
-        keys_to_keep = []  # Lista de claves del estado de sesión a mantener
+# Gestión del cierre de sesión
+if st.button("Cerrar Sesión"):
+    keys_to_keep = []  # Lista de claves del estado de sesión a mantener
 
-        # Borrar todas las claves del estado de sesión excepto las especificadas
-        for key in list(st.session_state.keys()):
-            if key not in keys_to_keep:
-                del st.session_state[key]
+    # Borrar todas las claves del estado de sesión excepto las especificadas
+    for key in list(st.session_state.keys()):
+        if key not in keys_to_keep:
+            del st.session_state[key]
 
-        # Mensaje de sesión cerrada y re-ejecución del script para actualizar la interfaz de usuario
-        st.write("Sesión cerrada. ¡Gracias por usar el bot!")
-        st.rerun()
+    # Mensaje de sesión cerrada y re-ejecución del script para actualizar la interfaz de usuario
+    st.write("Sesión cerrada. ¡Gracias por usar el bot!")
+    st.rerun()
+
 
