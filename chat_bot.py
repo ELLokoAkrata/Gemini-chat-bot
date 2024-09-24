@@ -99,7 +99,7 @@ Guía para usar el bot:
 
 4) Cuando ya no quieras hablar con el bot, cierra sesión.
 
-5) Siempre usa el mismo nombre de sesión, esto te ayudará a recuperar la sesión.
+5) Siempre usa el mismo nombre de sesión, esto te ayudará a recuperar la sesión,pillin.
 
 6) Disfruta y pregunta lo que quieras preguntar.
 
