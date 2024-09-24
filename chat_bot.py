@@ -103,7 +103,7 @@ Guía para usar el bot:
 
 6) Disfruta y pregunta lo que quieras preguntar.
 
-Código fuente en el siguiente repositorio: https://github.com/RDvibe/Gemini-chat-bot""")
+Código fuente en el siguiente repositorio: https://github.com/Ellokoakarata/Gemini-chat-bot""")
 
 # Inicializar st.session_state
 if "user_uuid" not in st.session_state:
