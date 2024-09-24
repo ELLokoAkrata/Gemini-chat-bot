@@ -36,7 +36,7 @@ GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # Configuración del modelo de Google Generative AI
-model_name = 'models/gemini-1.5-pro'
+model_name = 'models/gemini-1.5-pro-002"
 harassment_setting = 'block_none'
 temperature = 0.66
 top_p = 1
