@@ -87,7 +87,7 @@ document_ref = collection_ref.document(document_name)
 st.title("Gemini la versión Psycho 🤖")
 
 # Primero, renderizar el contenido con markdown en rojo
-st.markdown(""" Este es un bot que usa Gemini AI la tecnología de Inteligencia Artificial de Google, traída a este espacio gracias a RD
+st.markdown(""" Este es un bot que usa Gemini AI la tecnología de Inteligencia Artificial de Google, traída a este espacio para que puedas interactuar con ella de una forma diferente.
 
 Guía para usar el bot:
 
