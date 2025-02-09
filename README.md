@@ -4,7 +4,7 @@
 Este proyecto es una aplicación de chatbot construida con Streamlit y Google Generative AI, diseñada para proporcionar una experiencia interactiva de conversación con un bot con "personalidad" psycho mística y delirante.
 
 ## Demostración
-Puedes probar el chatbot a través del siguiente enlace: [Gemini Versión Psycho Chat Bot](https://chat-bot-gemimi-psycho.streamlit.app/)
+Puedes probar el chatbot a través del siguiente enlace: [Gemini Versión Psycho Chat Bot](https://gemini-psycho.streamlit.app/)
 
 ## Características
 
@@ -31,7 +31,7 @@ El modelo de Google Generative AI se configura con una clave API y otros paráme
 
 ## Uso
 
-1. Visita la [aplicación web](https://chat-bot-gemimi-psycho.streamlit.app/).
+1. Visita la [aplicación web](https://gemini-psycho.streamlit.app/).
 2. Introduce tu nombre para comenzar e inicia sesión.
 3. Interactúa con el bot escribiendo mensajes y recibiendo respuestas.
 4. Puedes cerrar sesión en cualquier momento para terminar la conversación.
