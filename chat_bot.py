@@ -74,6 +74,16 @@ def generate_and_save_image(prompt: str, output_filename: str):
             config=config
         )
         
+        # Verificar si la respuesta es válida
+        if not response or not response.candidates:
+            st.error("💀 La respuesta del modelo está vacía")
+            return None
+            
+        # Verificar si hay contenido en la respuesta
+        if not response.candidates[0].content:
+            st.error("💀 No hay contenido en la respuesta del modelo")
+            return None
+            
         # Iterar sobre las partes de la respuesta
         for part in response.candidates[0].content.parts:
             if hasattr(part, 'inline_data') and part.inline_data:
@@ -93,6 +103,7 @@ def generate_and_save_image(prompt: str, output_filename: str):
                 st.write(part.text)
     except Exception as e:
         st.error(f"💀 ERROR en la generación de imagen: {str(e)}")
+        st.error("Detalles del error:", exc_info=True)  # Agregar más detalles del error
     return None
 
 # --------------------- Interfaz Streamlit ---------------------
