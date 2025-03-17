@@ -8,7 +8,7 @@ from PIL import Image
 import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
-import google.generativeai as genai
+from google import genai
 from google.genai.types import GenerateContentConfig
 
 # --------------------- Firebase & Generative AI Initialization ---------------------
