@@ -421,7 +421,7 @@ else:
     3. (Opcional) Modifica la imagen con un nuevo prompt o usa uno de los ejemplos.
     4. Tambien puedes subir una imagen y editarla (de preferencia que sea de 1024 * 1024)
     
-    ⚠️ ADVERTENCIA: Este generador puede invocar imágenes surrealistas y perturbadoras.
+    ⚠️ ADVERTENCIA: Este generador funciona en el plan free de GoogleAI por lo cual el uso esta bastante limitado.
     """)
     
 st.markdown("---")
