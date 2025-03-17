@@ -277,34 +277,48 @@ if st.session_state.get("logged_in", False):
             prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:", 
                                        value=st.session_state.get("selected_prompt", ""))
             submit_gen = st.form_submit_button("Generar Imagen")
+        
+        # Generación de imagen (FUERA del formulario)
+        if submit_gen and prompt_input:
+            generated_image = generate_and_save_image(prompt_input, username)
             
-            if submit_gen and prompt_input:
-                generated_image = generate_and_save_image(prompt_input, username)
-                if generated_image:
-                    # Mostrar opción de modificación inmediata
-                    st.markdown("### 🔄 ¿Quieres modificar esta imagen?")
-                    mod_prompt = st.text_input("💡 Ingresa el prompt para modificar:", 
-                                             value=st.session_state.get("selected_mod_prompt", ""))
-                    if st.button("Modificar Imagen"):
-                        try:
-                            last_image = st.session_state["last_generated_image"]
-                            if "image" not in last_image:
-                                st.error("💀 Error: La imagen original no está disponible en memoria")
-                                st.stop()
-                            original_image = last_image["image"]
-                            
-                            # Generar imagen modificada
-                            mod_image = generate_and_save_image(
-                                prompt=mod_prompt,
-                                username=username,
-                                is_modified=True,
-                                original_image=original_image
-                            )
-                            
-                        except Exception as e:
-                            st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
-                            import traceback
-                            st.error(f"Detalles del error:\n{traceback.format_exc()}")
+            # Guardar en session_state para poder modificarla después
+            if generated_image:
+                st.session_state["current_generated_image"] = True
+        
+        # Mostrar opción de modificación inmediata (FUERA del formulario)
+        if st.session_state.get("current_generated_image", False) and "last_generated_image" in st.session_state:
+            st.markdown("---")
+            st.markdown("### 🔄 ¿Quieres modificar esta imagen?")
+            
+            # Formulario de modificación separado
+            with st.form("immediate_modification_form"):
+                mod_prompt = st.text_input("💡 Ingresa el prompt para modificar:", 
+                                         value=st.session_state.get("selected_mod_prompt", ""))
+                submit_immediate_mod = st.form_submit_button("Modificar Imagen")
+            
+            # Procesamiento de la modificación (FUERA del formulario)
+            if submit_immediate_mod:
+                try:
+                    last_image = st.session_state["last_generated_image"]
+                    if "image" not in last_image:
+                        st.error("💀 Error: La imagen original no está disponible en memoria")
+                        st.stop()
+                    
+                    original_image = last_image["image"]
+                    
+                    # Generar imagen modificada
+                    mod_image = generate_and_save_image(
+                        prompt=mod_prompt,
+                        username=username,
+                        is_modified=True,
+                        original_image=original_image
+                    )
+                    
+                except Exception as e:
+                    st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
+                    import traceback
+                    st.error(f"Detalles del error:\n{traceback.format_exc()}")
     
     with tab2:
         st.markdown("### 🌟 Sube tu imagen para modificarla")
@@ -328,34 +342,35 @@ if st.session_state.get("logged_in", False):
             mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", 
                                      value=st.session_state.get("selected_mod_prompt", ""))
             submit_mod = st.form_submit_button("Modificar Imagen")
-            
-            if submit_mod:
-                try:
-                    # Usar la imagen subida o la última generada
-                    if "uploaded_image" in st.session_state:
-                        original_image = st.session_state["uploaded_image"]
-                    elif "last_generated_image" in st.session_state:
-                        last_image = st.session_state["last_generated_image"]
-                        if "image" not in last_image:
-                            st.error("💀 Error: La imagen original no está disponible en memoria")
-                            st.stop()
-                        original_image = last_image["image"]
-                    else:
-                        st.error("💀 No hay imagen disponible para modificar. Sube una imagen o genera una nueva.")
+        
+        # Procesamiento de la modificación (FUERA del formulario)
+        if submit_mod:
+            try:
+                # Usar la imagen subida o la última generada
+                if "uploaded_image" in st.session_state:
+                    original_image = st.session_state["uploaded_image"]
+                elif "last_generated_image" in st.session_state:
+                    last_image = st.session_state["last_generated_image"]
+                    if "image" not in last_image:
+                        st.error("💀 Error: La imagen original no está disponible en memoria")
                         st.stop()
-                    
-                    # Generar imagen modificada
-                    mod_image = generate_and_save_image(
-                        prompt=mod_prompt,
-                        username=username,
-                        is_modified=True,
-                        original_image=original_image
-                    )
-                    
-                except Exception as e:
-                    st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
-                    import traceback
-                    st.error(f"Detalles del error:\n{traceback.format_exc()}")
+                    original_image = last_image["image"]
+                else:
+                    st.error("💀 No hay imagen disponible para modificar. Sube una imagen o genera una nueva.")
+                    st.stop()
+                
+                # Generar imagen modificada
+                mod_image = generate_and_save_image(
+                    prompt=mod_prompt,
+                    username=username,
+                    is_modified=True,
+                    original_image=original_image
+                )
+                
+            except Exception as e:
+                st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
+                import traceback
+                st.error(f"Detalles del error:\n{traceback.format_exc()}")
     
     # Botones de descarga (fuera de los tabs)
     col1, col2 = st.columns(2)
