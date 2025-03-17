@@ -177,6 +177,21 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                     "is_modified": is_modified,
                     "original_prompt": None if is_modified else prompt
                 }
+                
+                # Procesar y mostrar el texto generado si existe
+                generated_text = []
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'text') and part.text:
+                        generated_text.append(part.text)
+                
+                if generated_text:
+                    st.markdown("### 📝 Poema/Descripción Generada")
+                    for text in generated_text:
+                        st.markdown(f"*{text}*")
+                    
+                    # Agregar el texto generado a los datos de Firestore
+                    image_data["generated_text"] = generated_text
+                
                 db.collection("imagenes").document(output_filename).set(image_data)
                 
                 # Subir a Firebase Storage en la carpeta "gemini images"
