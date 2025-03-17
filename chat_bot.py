@@ -327,7 +327,7 @@ if st.session_state.get("logged_in", False):
         if uploaded_file is not None:
             # Convertir el archivo subido a imagen PIL
             image = Image.open(uploaded_file)
-            st.image(image, caption="Imagen subida", use_column_width=True)
+            st.image(image, caption="Imagen subida", use_container_width=True)
             
             # Guardar la imagen en session_state para modificaciones
             st.session_state["uploaded_image"] = image
