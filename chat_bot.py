@@ -43,25 +43,13 @@ db = firestore.client()
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
-# Configuración del modelo de Generative AI (usa el mismo modelo o ajústalo según convenga)
-model_name = 'gemini-2.0-flash'
+# Configuración del modelo de Generative AI
+model_id = 'gemini-2.0-flash'
 harassment_setting = 'block_none'
 temperature = 1.0
 top_p = 1
 top_k = 1
 max_output_tokens = 4096
-
-# Instanciar el modelo generativo
-model = client.get_model(
-    model_name=model_name,
-    safety_settings={'HARASSMENT': harassment_setting},
-    generation_config={
-        "temperature": temperature,
-        "top_p": top_p,
-        "top_k": top_k,
-        "max_output_tokens": max_output_tokens
-    }
-)
 
 # --------------------- Funciones Auxiliares ---------------------
 
@@ -79,8 +67,12 @@ def generate_and_save_image(prompt: str, output_filename: str):
     
     st.info("🌀 Generando imagen, aguanta la energía del caos...")
     try:
-        # Generar imagen con el prompt
-        response = model.generate_content(prompt, config=config)
+        # Generar imagen con el prompt usando la nueva API
+        response = client.models.generate_content(
+            model=model_id,
+            contents=prompt,
+            config=config
+        )
         
         # Iterar sobre las partes de la respuesta
         for part in response.candidates[0].content.parts:
@@ -178,7 +170,12 @@ if st.session_state.get("logged_in", False):
                 config = GenerateContentConfig(response_modalities=['Text', 'Image'])
                 
                 st.info("🌀 Modificando imagen, conectando al glitch...")
-                response = model.generate_content([mod_prompt, original_image], config=config)
+                # Usar la nueva API para modificar la imagen
+                response = client.models.generate_content(
+                    model=model_id,
+                    contents=[mod_prompt, original_image],
+                    config=config
+                )
                 
                 for part in response.candidates[0].content.parts:
                     if hasattr(part, 'inline_data') and part.inline_data:
