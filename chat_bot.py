@@ -404,6 +404,7 @@ else:
     1. Ingresa tu nombre de poder en la barra lateral (máximo 8 caracteres).
     2. Una vez dentro, escribe un prompt para generar una imagen o usa uno de los ejemplos.
     3. (Opcional) Modifica la imagen con un nuevo prompt o usa uno de los ejemplos.
+    4. Tambien puedes subir una imagen y editarla (de preferencia que sea de 1024 * 1024)
     
     ⚠️ ADVERTENCIA: Este generador puede invocar imágenes surrealistas y perturbadoras.
     """)
