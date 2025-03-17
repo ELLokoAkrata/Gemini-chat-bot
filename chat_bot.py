@@ -51,7 +51,34 @@ top_p = 1
 top_k = 1
 max_output_tokens = 4096
 
+# Ejemplos de prompts
+EXAMPLE_PROMPTS = [
+    "Create a surreal horror image of an psycho anarcho-punk",
+    "Generate a cyberpunk cityscape with neon lights and flying cars",
+    "Create a psychedelic portrait of a digital shaman",
+    "Generate a dystopian future with AI overlords",
+    "Create a glitch art representation of human consciousness"
+]
+
+EXAMPLE_MOD_PROMPTS = [
+    "Make the hair green and add neon effects",
+    "Add a glitch effect and make it more surreal",
+    "Transform it into a cyberpunk style",
+    "Add psychedelic patterns and colors",
+    "Make it more dystopian and dark"
+]
+
 # --------------------- Funciones Auxiliares ---------------------
+
+def get_timestamp():
+    """Retorna un timestamp formateado para nombres de archivo"""
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+def generate_filename(username: str, is_modified: bool = False):
+    """Genera un nombre de archivo único basado en el usuario y timestamp"""
+    timestamp = get_timestamp()
+    prefix = "mod_" if is_modified else "gen_"
+    return f"{prefix}{username}_{timestamp}.png"
 
 def upload_image_to_storage(local_path: str, remote_path: str):
     """Sube la imagen a Firebase Storage en la ruta especificada."""
@@ -60,10 +87,13 @@ def upload_image_to_storage(local_path: str, remote_path: str):
     blob.upload_from_filename(local_path)
     st.success(f"Imagen subida a Storage: {remote_path}")
 
-def generate_and_save_image(prompt: str, output_filename: str):
+def generate_and_save_image(prompt: str, username: str, is_modified: bool = False):
     """Genera una imagen a partir de un prompt, la guarda localmente y la sube a Firebase Storage."""
     # Configuración para respuesta en imagen y texto
     config = GenerateContentConfig(response_modalities=['Text', 'Image'])
+    
+    # Generar nombre de archivo único
+    output_filename = generate_filename(username, is_modified)
     
     st.info("🌀 Generando imagen, aguanta la energía del caos...")
     try:
@@ -93,7 +123,30 @@ def generate_and_save_image(prompt: str, output_filename: str):
                 
                 # Guardar la imagen localmente
                 image.save(output_filename)
-                st.image(image, caption=f"Imagen generada para: {prompt}")
+                
+                # Mostrar la imagen con su descripción
+                st.markdown(f"### 🖼️ Imagen {'Modificada' if is_modified else 'Generada'}")
+                st.image(image, caption=f"Prompt: {prompt}")
+                
+                # Botón de descarga
+                with open(output_filename, "rb") as file:
+                    st.download_button(
+                        label=f"📥 Descargar imagen {'modificada' if is_modified else 'generada'}",
+                        data=file,
+                        file_name=output_filename,
+                        mime="image/png"
+                    )
+                
+                # Guardar información en Firestore
+                image_data = {
+                    "username": username,
+                    "prompt": prompt,
+                    "timestamp": datetime.now(),
+                    "filename": output_filename,
+                    "is_modified": is_modified,
+                    "original_prompt": prompt if not is_modified else None
+                }
+                db.collection("imagenes").document(output_filename).set(image_data)
                 
                 # Subir a Firebase Storage en la carpeta "gemini images"
                 remote_path = f"gemini images/{output_filename}"
@@ -103,7 +156,7 @@ def generate_and_save_image(prompt: str, output_filename: str):
                 st.write(part.text)
     except Exception as e:
         st.error(f"💀 ERROR en la generación de imagen: {str(e)}")
-        st.error("Detalles del error:", exc_info=True)  # Agregar más detalles del error
+        st.error("Detalles del error:", exc_info=True)
     return None
 
 # --------------------- Interfaz Streamlit ---------------------
@@ -136,41 +189,60 @@ with st.sidebar:
             st.rerun()
     else:
         with st.form("login"):
-            user_name = st.text_input("🌀 Tu Nombre de Poder")
+            user_name = st.text_input("🌀 Tu Nombre de Poder (máx 8 caracteres)")
             if st.form_submit_button("🎯 Iniciar Viaje"):
                 if user_name:
-                    user_query = db.collection("usuarios").where("nombre", "==", user_name).get()
-                    if user_query:
-                        user_data = user_query[0].to_dict()
-                        st.session_state["user_uuid"] = user_data["user_uuid"]
+                    if len(user_name) > 8:
+                        st.error("💀 El nombre no puede tener más de 8 caracteres")
                     else:
-                        new_uuid = str(uuid.uuid4())
-                        db.collection("usuarios").document(new_uuid).set({
-                            "nombre": user_name,
-                            "user_uuid": new_uuid
-                        })
-                        st.session_state["user_uuid"] = new_uuid
-                    st.session_state["user_name"] = user_name
-                    st.session_state["logged_in"] = True
-                    st.rerun()
+                        user_query = db.collection("usuarios").where("nombre", "==", user_name).get()
+                        if user_query:
+                            user_data = user_query[0].to_dict()
+                            st.session_state["user_uuid"] = user_data["user_uuid"]
+                        else:
+                            new_uuid = str(uuid.uuid4())
+                            db.collection("usuarios").document(new_uuid).set({
+                                "nombre": user_name,
+                                "user_uuid": new_uuid
+                            })
+                            st.session_state["user_uuid"] = new_uuid
+                        st.session_state["user_name"] = user_name
+                        st.session_state["logged_in"] = True
+                        st.rerun()
 
 # Área principal: Solo se muestra si el usuario está logueado
 if st.session_state.get("logged_in", False):
+    username = st.session_state.get("user_name", "anon")
+    
     st.header("Genera tu imagen al éter")
     
+    # Mostrar ejemplos de prompts
+    st.markdown("### 🌟 Ejemplos de Prompts:")
+    for prompt in EXAMPLE_PROMPTS:
+        if st.button(f"Usar: {prompt}"):
+            st.session_state["selected_prompt"] = prompt
+    
     with st.form("image_generation_form"):
-        prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:")
+        prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:", 
+                                   value=st.session_state.get("selected_prompt", ""))
         submit_gen = st.form_submit_button("Generar Imagen")
         
         if submit_gen and prompt_input:
-            # Genera la imagen y la guarda localmente como "generated_image.png"
-            generated_image = generate_and_save_image(prompt_input, "generated_image.png")
+            # Genera la imagen y la guarda localmente
+            generated_image = generate_and_save_image(prompt_input, username)
     
     st.markdown("---")
     st.header("Modificar imagen generada (opcional)")
     
+    # Mostrar ejemplos de prompts de modificación
+    st.markdown("### 🌟 Ejemplos de Modificación:")
+    for prompt in EXAMPLE_MOD_PROMPTS:
+        if st.button(f"Usar: {prompt}", key=f"mod_{prompt}"):
+            st.session_state["selected_mod_prompt"] = prompt
+    
     with st.form("image_modification_form"):
-        mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", value="Make the image red")
+        mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", 
+                                 value=st.session_state.get("selected_mod_prompt", "Make the image red"))
         submit_mod = st.form_submit_button("Modificar Imagen")
         
         if submit_mod and os.path.exists("generated_image.png"):
@@ -194,9 +266,21 @@ if st.session_state.get("logged_in", False):
                         mod_image = Image.open(io.BytesIO(mod_image_data))
                         
                         # Guardar la imagen modificada
-                        mod_filename = "modified_image.png"
+                        mod_filename = generate_filename(username, is_modified=True)
                         mod_image.save(mod_filename)
-                        st.image(mod_image, caption="Imagen modificada")
+                        
+                        # Mostrar la imagen modificada con su descripción
+                        st.markdown("### 🖼️ Imagen Modificada")
+                        st.image(mod_image, caption=f"Prompt de modificación: {mod_prompt}")
+                        
+                        # Botón de descarga para la imagen modificada
+                        with open(mod_filename, "rb") as file:
+                            st.download_button(
+                                label="📥 Descargar imagen modificada",
+                                data=file,
+                                file_name=mod_filename,
+                                mime="image/png"
+                            )
                         
                         # Subir a Firebase Storage en "gemini images"
                         remote_mod_path = f"gemini images/{mod_filename}"
@@ -211,9 +295,9 @@ if st.session_state.get("logged_in", False):
 else:
     st.markdown("""
     ## 🌌 GUÍA DE INICIACIÓN
-    1. Ingresa tu nombre de poder en la barra lateral.
-    2. Una vez dentro, escribe un prompt para generar una imagen.
-    3. (Opcional) Modifica la imagen con un nuevo prompt.
+    1. Ingresa tu nombre de poder en la barra lateral (máximo 8 caracteres).
+    2. Una vez dentro, escribe un prompt para generar una imagen o usa uno de los ejemplos.
+    3. (Opcional) Modifica la imagen con un nuevo prompt o usa uno de los ejemplos.
     
     ⚠️ ADVERTENCIA: Este generador puede invocar imágenes surrealistas y perturbadoras.
     """)
