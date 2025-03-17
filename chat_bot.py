@@ -238,10 +238,8 @@ if st.session_state.get("logged_in", False):
             # Genera la imagen y la guarda localmente
             generated_image = generate_and_save_image(prompt_input, username)
             if generated_image:
-                st.session_state["last_generated_image"] = {
-                    "filename": generate_filename(username),
-                    "prompt": prompt_input
-                }
+                # No necesitamos guardar aquí porque generate_and_save_image ya lo hace
+                pass
     
     # Botón de descarga para la imagen generada (fuera del formulario)
     if "last_generated_image" in st.session_state:
@@ -272,6 +270,10 @@ if st.session_state.get("logged_in", False):
         if submit_mod and "last_generated_image" in st.session_state:
             try:
                 last_image = st.session_state["last_generated_image"]
+                if "image" not in last_image:
+                    st.error("💀 Error: La imagen original no está disponible en memoria")
+                    st.stop()
+                    
                 # Usar la imagen en memoria en lugar de abrir el archivo
                 original_image = last_image["image"]
                 # Configuración para modificación: enviar prompt y la imagen original
@@ -301,7 +303,8 @@ if st.session_state.get("logged_in", False):
                         # Guardar la información de la imagen modificada
                         st.session_state["last_modified_image"] = {
                             "filename": mod_filename,
-                            "prompt": mod_prompt
+                            "prompt": mod_prompt,
+                            "image": mod_image  # Guardamos la imagen en memoria
                         }
                         
                         # Subir a Firebase Storage en "gemini images"
@@ -312,6 +315,8 @@ if st.session_state.get("logged_in", False):
                         st.write(part.text)
             except Exception as e:
                 st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
+                import traceback
+                st.error(f"Detalles del error:\n{traceback.format_exc()}")
         elif submit_mod:
             st.error("No se encontró la imagen original. Primero genera una imagen.")
     
