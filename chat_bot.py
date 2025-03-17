@@ -288,7 +288,30 @@ if st.session_state.get("logged_in", False):
             if submit_gen and prompt_input:
                 generated_image = generate_and_save_image(prompt_input, username)
                 if generated_image:
-                    pass
+                    # Mostrar opción de modificación inmediata
+                    st.markdown("### 🔄 ¿Quieres modificar esta imagen?")
+                    mod_prompt = st.text_input("💡 Ingresa el prompt para modificar:", 
+                                             value=st.session_state.get("selected_mod_prompt", ""))
+                    if st.button("Modificar Imagen"):
+                        try:
+                            last_image = st.session_state["last_generated_image"]
+                            if "image" not in last_image:
+                                st.error("💀 Error: La imagen original no está disponible en memoria")
+                                st.stop()
+                            original_image = last_image["image"]
+                            
+                            # Generar imagen modificada
+                            mod_image = generate_and_save_image(
+                                prompt=mod_prompt,
+                                username=username,
+                                is_modified=True,
+                                original_image=original_image
+                            )
+                            
+                        except Exception as e:
+                            st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
+                            import traceback
+                            st.error(f"Detalles del error:\n{traceback.format_exc()}")
     
     with tab2:
         st.markdown("### 🌟 Sube tu imagen para modificarla")
