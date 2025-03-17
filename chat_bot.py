@@ -185,7 +185,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                         generated_text.append(part.text)
                 
                 if generated_text:
-                    st.markdown("### 📝 Poema/Descripción Generada")
+                    st.markdown("### 📝 Texto generado por el modelo")
                     for text in generated_text:
                         st.markdown(f"*{text}*")
                     
