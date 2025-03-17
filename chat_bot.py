@@ -44,7 +44,7 @@ GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # Configuración del modelo de Generative AI
-model_id = 'gemini-2.0-flash'
+model_id = 'gemini-2.0-flash-exp'
 harassment_setting = 'block_none'
 temperature = 1.0
 top_p = 1
