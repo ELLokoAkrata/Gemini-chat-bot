@@ -2,6 +2,7 @@ import os
 import time
 import io
 import uuid
+import base64
 from datetime import datetime
 from PIL import Image
 
@@ -9,7 +10,7 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 from google import genai
-from google.genai.types import GenerateContentConfig
+from google.genai import types
 
 # --------------------- Firebase & Generative AI Initialization ---------------------
 
@@ -44,8 +45,35 @@ GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # Configuración del modelo de Generative AI
-model_id = 'gemini-2.0-flash-exp-image-generation'
+MODEL_ID = 'gemini-2.0-flash-exp-image-generation'  # Volvemos al modelo original
+TEMPERATURE = 1.0
+TOP_P = 0.95
+TOP_K = 40
+MAX_OUTPUT_TOKENS = 8192
 
+# Configuración de seguridad sin censura
+SAFETY_SETTINGS = [
+    types.SafetySetting(
+        category="HARM_CATEGORY_HARASSMENT",
+        threshold="OFF"
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_HATE_SPEECH",
+        threshold="OFF"
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold="OFF"
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold="OFF"
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_CIVIC_INTEGRITY",
+        threshold="OFF"
+    )
+]
 
 # Ejemplos de prompts
 EXAMPLE_PROMPTS = [
@@ -83,21 +111,44 @@ def upload_image_to_storage(local_path: str, remote_path: str):
     blob.upload_from_filename(local_path)
     st.success(f"Imagen subida a Storage: {remote_path}")
 
-def generate_and_save_image(prompt: str, username: str, is_modified: bool = False):
+def save_binary_file(file_name, data):
+    """Guarda datos binarios en un archivo."""
+    with open(file_name, "wb") as f:
+        f.write(data)
+
+def generate_and_save_image(prompt: str, username: str, is_modified: bool = False, original_image=None):
     """Genera una imagen a partir de un prompt, la guarda localmente y la sube a Firebase Storage."""
-    # Configuración para respuesta en imagen y texto
-    config = GenerateContentConfig(response_modalities=['Text', 'Image'])
-    
     # Generar nombre de archivo único
     output_filename = generate_filename(username, is_modified)
     
     st.info("🌀 Generando imagen, aguanta la energía del caos...")
     try:
+        # Configuración optimizada para generación de contenido
+        generate_content_config = types.GenerateContentConfig(
+            temperature=TEMPERATURE,
+            top_p=TOP_P,
+            top_k=TOP_K,
+            max_output_tokens=MAX_OUTPUT_TOKENS,
+            response_modalities=["text", "image"],
+            safety_settings=SAFETY_SETTINGS  # Aplicamos la configuración sin censura
+        )
+        
+        # Preparamos el contenido para la API
+        if is_modified and original_image:
+            # Para modificación, enviamos la imagen original y el prompt
+            contents = [
+                types.Part.from_data(original_image),
+                types.Part.from_text(text=prompt)
+            ]
+        else:
+            # Para generación, solo enviamos el prompt
+            contents = prompt
+        
         # Generar imagen con el prompt usando la nueva API
         response = client.models.generate_content(
-            model=model_id,
-            contents=prompt,
-            config=config
+            model=MODEL_ID,
+            contents=contents,
+            generation_config=generate_content_config,
         )
         
         # Verificar si la respuesta es válida
@@ -131,7 +182,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                     "timestamp": datetime.now(),
                     "filename": output_filename,
                     "is_modified": is_modified,
-                    "original_prompt": prompt if not is_modified else None
+                    "original_prompt": None if is_modified else prompt
                 }
                 db.collection("imagenes").document(output_filename).set(image_data)
                 
@@ -219,114 +270,103 @@ if st.session_state.get("logged_in", False):
     
     st.header("Genera tu imagen al éter")
     
-    # Mostrar ejemplos de prompts
-    st.markdown("### 🌟 Ejemplos de Prompts:")
-    for prompt in EXAMPLE_PROMPTS:
-        if st.button(f"Usar: {prompt}"):
-            st.session_state["selected_prompt"] = prompt
+    # Tabs para diferentes funcionalidades
+    tab1, tab2 = st.tabs(["🎨 Generar Imagen", "🔄 Modificar Imagen"])
     
-    with st.form("image_generation_form"):
-        prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:", 
-                                   value=st.session_state.get("selected_prompt", ""))
-        submit_gen = st.form_submit_button("Generar Imagen")
+    with tab1:
+        # Mostrar ejemplos de prompts
+        st.markdown("### 🌟 Ejemplos de Prompts:")
+        for prompt in EXAMPLE_PROMPTS:
+            if st.button(f"Usar: {prompt}"):
+                st.session_state["selected_prompt"] = prompt
         
-        if submit_gen and prompt_input:
-            # Genera la imagen y la guarda localmente
-            generated_image = generate_and_save_image(prompt_input, username)
-            if generated_image:
-                # No necesitamos guardar aquí porque generate_and_save_image ya lo hace
-                pass
+        with st.form("image_generation_form"):
+            prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:", 
+                                       value=st.session_state.get("selected_prompt", ""))
+            submit_gen = st.form_submit_button("Generar Imagen")
+            
+            if submit_gen and prompt_input:
+                generated_image = generate_and_save_image(prompt_input, username)
+                if generated_image:
+                    pass
     
-    # Botón de descarga para la imagen generada (fuera del formulario)
-    if "last_generated_image" in st.session_state:
-        last_image = st.session_state["last_generated_image"]
-        if os.path.exists(last_image["filename"]):
-            with open(last_image["filename"], "rb") as file:
-                st.download_button(
-                    label="📥 Descargar imagen generada",
-                    data=file,
-                    file_name=last_image["filename"],
-                    mime="image/png"
-                )
-    
-    st.markdown("---")
-    st.header("Modificar imagen generada (opcional)")
-    
-    # Mostrar ejemplos de prompts de modificación
-    st.markdown("### 🌟 Ejemplos de Modificación:")
-    for prompt in EXAMPLE_MOD_PROMPTS:
-        if st.button(f"Usar: {prompt}", key=f"mod_{prompt}"):
-            st.session_state["selected_mod_prompt"] = prompt
-    
-    with st.form("image_modification_form"):
-        mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", 
-                                 value=st.session_state.get("selected_mod_prompt", "Make the image red"))
-        submit_mod = st.form_submit_button("Modificar Imagen")
+    with tab2:
+        st.markdown("### 🌟 Sube tu imagen para modificarla")
+        uploaded_file = st.file_uploader("Sube una imagen para modificarla", type=["png", "jpg", "jpeg"])
         
-        if submit_mod and "last_generated_image" in st.session_state:
-            try:
-                last_image = st.session_state["last_generated_image"]
-                if "image" not in last_image:
-                    st.error("💀 Error: La imagen original no está disponible en memoria")
-                    st.stop()
-                    
-                # Usar la imagen en memoria en lugar de abrir el archivo
-                original_image = last_image["image"]
-                # Configuración para modificación: enviar prompt y la imagen original
-                config = GenerateContentConfig(response_modalities=['Text', 'Image'])
-                
-                st.info("🌀 Modificando imagen, conectando al glitch...")
-                # Usar la nueva API para modificar la imagen
-                response = client.models.generate_content(
-                    model=model_id,
-                    contents=[mod_prompt, original_image],
-                    config=config
-                )
-                
-                for part in response.candidates[0].content.parts:
-                    if hasattr(part, 'inline_data') and part.inline_data:
-                        mod_image_data = part.inline_data.data
-                        mod_image = Image.open(io.BytesIO(mod_image_data))
-                        
-                        # Guardar la imagen modificada
-                        mod_filename = generate_filename(username, is_modified=True)
-                        mod_image.save(mod_filename)
-                        
-                        # Mostrar la imagen modificada con su descripción
-                        st.markdown("### 🖼️ Imagen Modificada")
-                        st.image(mod_image, caption=f"Prompt de modificación: {mod_prompt}")
-                        
-                        # Guardar la información de la imagen modificada
-                        st.session_state["last_modified_image"] = {
-                            "filename": mod_filename,
-                            "prompt": mod_prompt,
-                            "image": mod_image  # Guardamos la imagen en memoria
-                        }
-                        
-                        # Subir a Firebase Storage en "gemini images"
-                        remote_mod_path = f"gemini images/{mod_filename}"
-                        upload_image_to_storage(mod_filename, remote_mod_path)
-                        break
+        if uploaded_file is not None:
+            # Convertir el archivo subido a imagen PIL
+            image = Image.open(uploaded_file)
+            st.image(image, caption="Imagen subida", use_column_width=True)
+            
+            # Guardar la imagen en session_state para modificaciones
+            st.session_state["uploaded_image"] = image
+        
+        # Mostrar ejemplos de prompts de modificación
+        st.markdown("### 🌟 Ejemplos de Modificación:")
+        for prompt in EXAMPLE_MOD_PROMPTS:
+            if st.button(f"Usar: {prompt}", key=f"mod_{prompt}"):
+                st.session_state["selected_mod_prompt"] = prompt
+        
+        with st.form("image_modification_form"):
+            mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", 
+                                     value=st.session_state.get("selected_mod_prompt", ""))
+            submit_mod = st.form_submit_button("Modificar Imagen")
+            
+            if submit_mod:
+                try:
+                    # Usar la imagen subida o la última generada
+                    if "uploaded_image" in st.session_state:
+                        original_image = st.session_state["uploaded_image"]
+                    elif "last_generated_image" in st.session_state:
+                        last_image = st.session_state["last_generated_image"]
+                        if "image" not in last_image:
+                            st.error("💀 Error: La imagen original no está disponible en memoria")
+                            st.stop()
+                        original_image = last_image["image"]
                     else:
-                        st.write(part.text)
-            except Exception as e:
-                st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
-                import traceback
-                st.error(f"Detalles del error:\n{traceback.format_exc()}")
-        elif submit_mod:
-            st.error("No se encontró la imagen original. Primero genera una imagen.")
+                        st.error("💀 No hay imagen disponible para modificar. Sube una imagen o genera una nueva.")
+                        st.stop()
+                    
+                    # Generar imagen modificada
+                    mod_image = generate_and_save_image(
+                        prompt=mod_prompt,
+                        username=username,
+                        is_modified=True,
+                        original_image=original_image
+                    )
+                    
+                except Exception as e:
+                    st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
+                    import traceback
+                    st.error(f"Detalles del error:\n{traceback.format_exc()}")
     
-    # Botón de descarga para la imagen modificada (fuera del formulario)
-    if "last_modified_image" in st.session_state:
-        last_mod_image = st.session_state["last_modified_image"]
-        if os.path.exists(last_mod_image["filename"]):
-            with open(last_mod_image["filename"], "rb") as file:
-                st.download_button(
-                    label="📥 Descargar imagen modificada",
-                    data=file,
-                    file_name=last_mod_image["filename"],
-                    mime="image/png"
-                )
+    # Botones de descarga (fuera de los tabs)
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if "last_generated_image" in st.session_state:
+            last_image = st.session_state["last_generated_image"]
+            if os.path.exists(last_image["filename"]):
+                with open(last_image["filename"], "rb") as file:
+                    st.download_button(
+                        label="📥 Descargar imagen generada",
+                        data=file,
+                        file_name=last_image["filename"],
+                        mime="image/png"
+                    )
+    
+    with col2:
+        if "last_modified_image" in st.session_state:
+            last_mod_image = st.session_state["last_modified_image"]
+            if os.path.exists(last_mod_image["filename"]):
+                with open(last_mod_image["filename"], "rb") as file:
+                    st.download_button(
+                        label="📥 Descargar imagen modificada",
+                        data=file,
+                        file_name=last_mod_image["filename"],
+                        mime="image/png"
+                    )
 else:
     st.markdown("""
     ## 🌌 GUÍA DE INICIACIÓN
