@@ -138,11 +138,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
         response = client.models.generate_content(
             model=MODEL_ID,
             contents=contents,
-            temperature=TEMPERATURE,
-            top_p=TOP_P,
-            top_k=TOP_K,
-            max_output_tokens=MAX_OUTPUT_TOKENS,
-            safety_settings=SAFETY_SETTINGS  # Aplicamos la configuración sin censura
+            safety_settings=SAFETY_SETTINGS  # Mantenemos solo la configuración de seguridad
         )
         
         # Verificar si la respuesta es válida
