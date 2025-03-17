@@ -41,7 +41,7 @@ db = firestore.client()
 
 # Configurar Google Generative AI con la API Key
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
-genai.configure(api_key=GOOGLE_API_KEY)
+client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # Configuración del modelo de Generative AI (usa el mismo modelo o ajústalo según convenga)
 model_name = 'gemini-2.0-flash'
@@ -52,7 +52,7 @@ top_k = 1
 max_output_tokens = 4096
 
 # Instanciar el modelo generativo
-model = genai.GenerativeModel(
+model = client.get_model(
     model_name=model_name,
     safety_settings={'HARASSMENT': harassment_setting},
     generation_config={
