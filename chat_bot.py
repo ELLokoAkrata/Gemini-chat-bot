@@ -142,6 +142,21 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                 # Subir a Firebase Storage en la carpeta "gemini images"
                 remote_path = f"gemini images/{output_filename}"
                 upload_image_to_storage(output_filename, remote_path)
+                
+                # Guardar la imagen en memoria en session_state
+                if not is_modified:
+                    st.session_state["last_generated_image"] = {
+                        "filename": output_filename,
+                        "prompt": prompt,
+                        "image": image  # Guardamos la imagen en memoria
+                    }
+                else:
+                    st.session_state["last_modified_image"] = {
+                        "filename": output_filename,
+                        "prompt": prompt,
+                        "image": image  # Guardamos la imagen en memoria
+                    }
+                
                 return image
             else:
                 st.write(part.text)
@@ -257,8 +272,8 @@ if st.session_state.get("logged_in", False):
         if submit_mod and "last_generated_image" in st.session_state:
             try:
                 last_image = st.session_state["last_generated_image"]
-                # Abrir la imagen previamente generada
-                original_image = Image.open(last_image["filename"])
+                # Usar la imagen en memoria en lugar de abrir el archivo
+                original_image = last_image["image"]
                 # Configuración para modificación: enviar prompt y la imagen original
                 config = GenerateContentConfig(response_modalities=['Text', 'Image'])
                 
