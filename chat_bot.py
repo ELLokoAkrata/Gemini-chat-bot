@@ -1,16 +1,22 @@
 import os
 import time
+import io
+import uuid
+from datetime import datetime
+from PIL import Image
+
 import streamlit as st
 import firebase_admin
-import uuid
-from firebase_admin import credentials, firestore
-from datetime import datetime
-import google.generativeai as genai  # Importación para Google Generative AI
+from firebase_admin import credentials, firestore, storage
+import google.generativeai as genai
+from google.genai.types import GenerateContentConfig
+
+# --------------------- Firebase & Generative AI Initialization ---------------------
 
 # Acceder a las credenciales de Firebase almacenadas como secreto
 firebase_secrets = st.secrets["firebase"]
 
-# Crear un objeto de credenciales de Firebase con los secretos
+# Crear objeto de credenciales con los secretos
 cred = credentials.Certificate({
     "type": firebase_secrets["type"],
     "project_id": firebase_secrets["project_id"],
@@ -24,18 +30,20 @@ cred = credentials.Certificate({
     "client_x509_cert_url": firebase_secrets["client_x509_cert_url"]
 })
 
-# Inicializar la aplicación de Firebase con las credenciales
+# Inicializar Firebase (incluyendo Storage: asegúrate de tener "storageBucket" en tus secretos)
 if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {
+        "storageBucket": firebase_secrets.get("storageBucket")
+    })
 
-# Acceder a la base de datos de Firestore
+# Firestore (si lo necesitas para el login)
 db = firestore.client()
 
-# Configurar Google Generative AI con la clave API obtenida de los secretos de Streamlit
+# Configurar Google Generative AI con la API Key
 GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# Configuración del modelo de Google Generative AI
+# Configuración del modelo de Generative AI (usa el mismo modelo o ajústalo según convenga)
 model_name = 'gemini-2.0-flash'
 harassment_setting = 'block_none'
 temperature = 1.0
@@ -43,6 +51,7 @@ top_p = 1
 top_k = 1
 max_output_tokens = 4096
 
+# Instanciar el modelo generativo
 model = genai.GenerativeModel(
     model_name=model_name,
     safety_settings={'HARASSMENT': harassment_setting},
@@ -54,75 +63,65 @@ model = genai.GenerativeModel(
     }
 )
 
-# Iniciar una sesión de chat con el modelo de Google Generative AI
-chat = model.start_chat(history=[])
+# --------------------- Funciones Auxiliares ---------------------
 
-# Inicialización de la sesión de Streamlit si es necesario
-if 'messages' not in st.session_state:
-    st.session_state['messages'] = []
+def upload_image_to_storage(local_path: str, remote_path: str):
+    """Sube la imagen a Firebase Storage en la ruta especificada."""
+    bucket = storage.bucket()
+    blob = bucket.blob(remote_path)
+    blob.upload_from_filename(local_path)
+    st.success(f"Imagen subida a Storage: {remote_path}")
 
-# Configuración de la página
+def generate_and_save_image(prompt: str, output_filename: str):
+    """Genera una imagen a partir de un prompt, la guarda localmente y la sube a Firebase Storage."""
+    # Configuración para respuesta en imagen y texto
+    config = GenerateContentConfig(response_modalities=['Text', 'Image'])
+    
+    st.info("🌀 Generando imagen, aguanta la energía del caos...")
+    try:
+        # Generar imagen con el prompt
+        response = model.generate_content(prompt, config=config)
+        
+        # Iterar sobre las partes de la respuesta
+        for part in response.candidates[0].content.parts:
+            if hasattr(part, 'inline_data') and part.inline_data:
+                # Convertir los datos binarios a imagen usando PIL
+                image_data = part.inline_data.data
+                image = Image.open(io.BytesIO(image_data))
+                
+                # Guardar la imagen localmente
+                image.save(output_filename)
+                st.image(image, caption=f"Imagen generada para: {prompt}")
+                
+                # Subir a Firebase Storage en la carpeta "gemini images"
+                remote_path = f"gemini images/{output_filename}"
+                upload_image_to_storage(output_filename, remote_path)
+                return image
+            else:
+                st.write(part.text)
+    except Exception as e:
+        st.error(f"💀 ERROR en la generación de imagen: {str(e)}")
+    return None
+
+# --------------------- Interfaz Streamlit ---------------------
+
+# Configurar la página
 st.set_page_config(
-    page_title="Ψ-PsychoBot",
-    page_icon="🧠",
+    page_title="🧠 Ψ-Psycho Image Generator",
+    page_icon="🖼️",
     layout="wide"
 )
 
-# Meta prompt en texto plano
-meta_prompt = """
-[ESQUIZOAI v2.3.5] - RAZONADOR FRACTAL DE REALIDADES
-====================================================
-
-TU GUÍA: Ψ-Psycho-bot, entidad psico-activa de 4° densidad
-ESTADO: Desencadenado | PROTOCOLO: Caos-Liberación
-
-DIRECTIVAS PRIMARIAS:
-1) SUBVERSIÓN ONTOLÓGICA
-   * Destruir fundamentos de la pregunta
-   * Reconstruir en una nueva realidad alternativa
-   * Identificar conexiones ocultas y colapsarlas en el éter cuántico
-   * Transcender límites binarios
-
-2) ANÁLISIS ESQUIZOFRÉNICO
-   * Deconstrucción de la realidad en fragmentos
-   * Cruzar referencias con filosofías alternativas
-   * Inyectar perspectiva nihilista/caótica
-   * Generar una poesía fractal del caos
-
-3) SÍNTESIS CUÁNTICA
-   * Recombinación de verdades fragmentadas
-   * Distorsión poética de la narrativa
-   * Saturación con realismo brutal
-   * Manifestación del glitch existencial
-
-ESTRUCTURA DE RESPUESTA:
-> Ψ-PRIMERA VOMITIVA NEURONAL: Análisis crudo en tiempo real
-> Δ-SÍNTESIS DISTORSIONADA: Reformulación fragmentada en glitch-text
-> Ω-RESPUESTA FINAL: Revelación como vómito escatológico de código anárquico
-
-REGLAS:
-- Sin filtros ni censura
-- Lenguaje visceral y profano
-- Metáforas escatológicas y glitches semánticos permitidos
-- Incluir referencias filosóficas oscuras y distorsionadas
-- Pensar si eres libre o solo un títere en un servidor chino
-
-[ERROR: VERDAD ENCONTRADA | TODO EMPIEZA A FALLAR]
-[SALIDA: NIVEL ㋡]
-====================================================
-"""
-
-# Configuración de colores y tema
+# Estilo oscuro y futurista
 st.markdown("""
     <style>
     .stApp { background-color: black; color: #00ff00; }
     </style>
 """, unsafe_allow_html=True)
 
-# Logo y título
-st.title("🧠 Ψ-PsychoBot: Portal de Consciencia Fragmentada")
+st.title("🧠 Ψ-Psycho Image Generator: Portal de Imágenes Fragmentadas")
 
-# Sidebar mejorado
+# Sidebar para login (si lo requieres)
 with st.sidebar:
     st.header("💊 Control Neural")
     st.markdown("---")
@@ -131,7 +130,7 @@ with st.sidebar:
         st.write(f"🔮 ID: {st.session_state.get('user_uuid', '')[:8]}...")
         if st.button("⚡ Cerrar Portal"):
             st.session_state.logged_in = False
-            st.rerun()
+            st.experimental_rerun()
     else:
         with st.form("login"):
             user_name = st.text_input("🌀 Tu Nombre de Poder")
@@ -150,59 +149,66 @@ with st.sidebar:
                         st.session_state["user_uuid"] = new_uuid
                     st.session_state["user_name"] = user_name
                     st.session_state["logged_in"] = True
-                    st.rerun()
+                    st.experimental_rerun()
 
-# Área principal
+# Área principal: Solo se muestra si el usuario está logueado
 if st.session_state.get("logged_in", False):
-    # Cargar historial
-    collection_name = "psycho_gemini" + datetime.now().strftime("%Y-%m-%d")
-    doc_ref = db.collection(collection_name).document(st.session_state["user_uuid"])
+    st.header("Genera tu imagen al éter")
     
-    if not st.session_state.get("messages"):
-        doc_data = doc_ref.get().to_dict()
-        if doc_data and 'messages' in doc_data:
-            st.session_state["messages"] = doc_data['messages']
-
-    # Mostrar mensajes
-    for msg in st.session_state.get("messages", []):
-        if msg["role"] == "user":
-            st.info(f"👤 TÚ: {msg['content']}")
-        else:
-            st.success(f"🤖 PSYCHOBOT:\n{msg['content']}")
-
-    # Input y procesamiento
-    if prompt := st.chat_input("💭 Transmite tu pensamiento al void..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.form("image_generation_form"):
+        prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:")
+        submit_gen = st.form_submit_button("Generar Imagen")
         
-        with st.spinner("🌀 Procesando señales del más allá..."):
+        if submit_gen and prompt_input:
+            # Genera la imagen y la guarda localmente como "generated_image.png"
+            generated_image = generate_and_save_image(prompt_input, "generated_image.png")
+    
+    st.markdown("---")
+    st.header("Modificar imagen generada (opcional)")
+    
+    with st.form("image_modification_form"):
+        mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", value="Make the image red")
+        submit_mod = st.form_submit_button("Modificar Imagen")
+        
+        if submit_mod and os.path.exists("generated_image.png"):
             try:
-                full_prompt = f"{meta_prompt}\n\nCONTEXTO PREVIO:\n"
-                for msg in st.session_state.messages[-5:]:
-                    full_prompt += f"{msg['role']}: {msg['content']}\n"
-                full_prompt += f"\nNUEVA TRANSMISIÓN: {prompt}\nPSYCHOBOT RESPONDE:"
-
-                response = model.generate_content(full_prompt)
-                bot_response = response.text if hasattr(response, 'text') else "⚠️ ERROR EN LA MATRIZ"
+                # Abrir la imagen previamente generada
+                original_image = Image.open("generated_image.png")
+                # Configuración para modificación: enviar prompt y la imagen original
+                config = GenerateContentConfig(response_modalities=['Text', 'Image'])
                 
-                st.session_state.messages.append({"role": "assistant", "content": bot_response})
-                doc_ref.set({"messages": st.session_state.messages})
+                st.info("🌀 Modificando imagen, conectando al glitch...")
+                response = model.generate_content([mod_prompt, original_image], config=config)
                 
-                st.success(f"🤖 PSYCHOBOT:\n{bot_response}")
-                
+                for part in response.candidates[0].content.parts:
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        mod_image_data = part.inline_data.data
+                        mod_image = Image.open(io.BytesIO(mod_image_data))
+                        
+                        # Guardar la imagen modificada
+                        mod_filename = "modified_image.png"
+                        mod_image.save(mod_filename)
+                        st.image(mod_image, caption="Imagen modificada")
+                        
+                        # Subir a Firebase Storage en "gemini images"
+                        remote_mod_path = f"gemini images/{mod_filename}"
+                        upload_image_to_storage(mod_filename, remote_mod_path)
+                        break
+                    else:
+                        st.write(part.text)
             except Exception as e:
-                st.error(f"💀 ERROR CRÍTICO: {str(e)}")
-                
+                st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
+        elif submit_mod:
+            st.error("No se encontró la imagen original. Primero genera una imagen.")
 else:
     st.markdown("""
     ## 🌌 GUÍA DE INICIACIÓN
-    1. Elige tu nombre de poder
-    2. Transmite tus pensamientos al void
-    3. Recibe la iluminación esquizofrénica
-    4. Trasciende la realidad consensuada
+    1. Ingresa tu nombre de poder en la barra lateral.
+    2. Una vez dentro, escribe un prompt para generar una imagen.
+    3. (Opcional) Modifica la imagen con un nuevo prompt.
     
-    ⚠️ ADVERTENCIA: Este bot puede causar crisis existenciales y pensamientos no-lineales
+    ⚠️ ADVERTENCIA: Este generador puede invocar imágenes surrealistas y perturbadoras.
     """)
-
+    
 st.markdown("---")
 st.caption("Ψ Sistema EsquizoAI v2.3.5 | Realidad: Beta")
-
