@@ -122,7 +122,7 @@ with st.sidebar:
         st.write(f"🔮 ID: {st.session_state.get('user_uuid', '')[:8]}...")
         if st.button("⚡ Cerrar Portal"):
             st.session_state.logged_in = False
-            st.experimental_rerun()
+            st.rerun()
     else:
         with st.form("login"):
             user_name = st.text_input("🌀 Tu Nombre de Poder")
@@ -141,7 +141,7 @@ with st.sidebar:
                         st.session_state["user_uuid"] = new_uuid
                     st.session_state["user_name"] = user_name
                     st.session_state["logged_in"] = True
-                    st.experimental_rerun()
+                    st.rerun()
 
 # Área principal: Solo se muestra si el usuario está logueado
 if st.session_state.get("logged_in", False):
