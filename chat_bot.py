@@ -175,7 +175,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🧠 Ψ-Psycho Image Generator: Portal de Imágenes Fragmentadas")
+st.title("🧠 Ψ-Psycho Image Generator: Portal de Imágenes Artificiales")
 
 # Sidebar para login (si lo requieres)
 with st.sidebar:
@@ -230,6 +230,23 @@ if st.session_state.get("logged_in", False):
         if submit_gen and prompt_input:
             # Genera la imagen y la guarda localmente
             generated_image = generate_and_save_image(prompt_input, username)
+            if generated_image:
+                st.session_state["last_generated_image"] = {
+                    "filename": generate_filename(username),
+                    "prompt": prompt_input
+                }
+    
+    # Botón de descarga para la imagen generada (fuera del formulario)
+    if "last_generated_image" in st.session_state:
+        last_image = st.session_state["last_generated_image"]
+        if os.path.exists(last_image["filename"]):
+            with open(last_image["filename"], "rb") as file:
+                st.download_button(
+                    label="📥 Descargar imagen generada",
+                    data=file,
+                    file_name=last_image["filename"],
+                    mime="image/png"
+                )
     
     st.markdown("---")
     st.header("Modificar imagen generada (opcional)")
@@ -245,10 +262,11 @@ if st.session_state.get("logged_in", False):
                                  value=st.session_state.get("selected_mod_prompt", "Make the image red"))
         submit_mod = st.form_submit_button("Modificar Imagen")
         
-        if submit_mod and os.path.exists("generated_image.png"):
+        if submit_mod and "last_generated_image" in st.session_state:
             try:
+                last_image = st.session_state["last_generated_image"]
                 # Abrir la imagen previamente generada
-                original_image = Image.open("generated_image.png")
+                original_image = Image.open(last_image["filename"])
                 # Configuración para modificación: enviar prompt y la imagen original
                 config = GenerateContentConfig(response_modalities=['Text', 'Image'])
                 
@@ -273,14 +291,11 @@ if st.session_state.get("logged_in", False):
                         st.markdown("### 🖼️ Imagen Modificada")
                         st.image(mod_image, caption=f"Prompt de modificación: {mod_prompt}")
                         
-                        # Botón de descarga para la imagen modificada
-                        with open(mod_filename, "rb") as file:
-                            st.download_button(
-                                label="📥 Descargar imagen modificada",
-                                data=file,
-                                file_name=mod_filename,
-                                mime="image/png"
-                            )
+                        # Guardar la información de la imagen modificada
+                        st.session_state["last_modified_image"] = {
+                            "filename": mod_filename,
+                            "prompt": mod_prompt
+                        }
                         
                         # Subir a Firebase Storage en "gemini images"
                         remote_mod_path = f"gemini images/{mod_filename}"
@@ -292,6 +307,18 @@ if st.session_state.get("logged_in", False):
                 st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
         elif submit_mod:
             st.error("No se encontró la imagen original. Primero genera una imagen.")
+    
+    # Botón de descarga para la imagen modificada (fuera del formulario)
+    if "last_modified_image" in st.session_state:
+        last_mod_image = st.session_state["last_modified_image"]
+        if os.path.exists(last_mod_image["filename"]):
+            with open(last_mod_image["filename"], "rb") as file:
+                st.download_button(
+                    label="📥 Descargar imagen modificada",
+                    data=file,
+                    file_name=last_mod_image["filename"],
+                    mime="image/png"
+                )
 else:
     st.markdown("""
     ## 🌌 GUÍA DE INICIACIÓN
