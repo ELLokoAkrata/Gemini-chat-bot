@@ -51,29 +51,32 @@ TOP_P = 0.95
 TOP_K = 40
 MAX_OUTPUT_TOKENS = 8192
 
-# Configuración de seguridad sin censura
-SAFETY_SETTINGS = [
-    types.SafetySetting(
-        category="HARM_CATEGORY_HARASSMENT",
-        threshold="OFF"
-    ),
-    types.SafetySetting(
-        category="HARM_CATEGORY_HATE_SPEECH",
-        threshold="OFF"
-    ),
-    types.SafetySetting(
-        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        threshold="OFF"
-    ),
-    types.SafetySetting(
-        category="HARM_CATEGORY_DANGEROUS_CONTENT",
-        threshold="OFF"
-    ),
-    types.SafetySetting(
-        category="HARM_CATEGORY_CIVIC_INTEGRITY",
-        threshold="OFF"
-    )
-]
+# Configuración de seguridad sin censura - Ahora se usará en config
+SAFETY_CONFIG = types.GenerateContentConfig(
+    safety_settings=[
+        types.SafetySetting(
+            category="HARM_CATEGORY_HARASSMENT",
+            threshold="OFF"
+        ),
+        types.SafetySetting(
+            category="HARM_CATEGORY_HATE_SPEECH",
+            threshold="OFF"
+        ),
+        types.SafetySetting(
+            category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold="OFF"
+        ),
+        types.SafetySetting(
+            category="HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold="OFF"
+        ),
+        types.SafetySetting(
+            category="HARM_CATEGORY_CIVIC_INTEGRITY",
+            threshold="OFF"
+        )
+    ],
+    response_modalities=['Text', 'Image']
+)
 
 # Ejemplos de prompts
 EXAMPLE_PROMPTS = [
@@ -127,18 +130,18 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
         if is_modified and original_image:
             # Para modificación, enviamos la imagen original y el prompt
             contents = [
-                types.Part.from_data(original_image),
-                types.Part.from_text(text=prompt)
+                prompt,  # Primero el texto según el ejemplo
+                original_image  # Luego la imagen
             ]
         else:
             # Para generación, solo enviamos el prompt
             contents = prompt
         
-        # Generar imagen con el prompt usando la nueva API
+        # Generar imagen con el prompt usando la API correcta
         response = client.models.generate_content(
             model=MODEL_ID,
             contents=contents,
-            safety_settings=SAFETY_SETTINGS  # Mantenemos solo la configuración de seguridad
+            config=SAFETY_CONFIG  # Usamos la configuración como config
         )
         
         # Verificar si la respuesta es válida
@@ -195,7 +198,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                     }
                 
                 return image
-            else:
+            elif hasattr(part, 'text') and part.text:
                 st.write(part.text)
     except Exception as e:
         st.error(f"💀 ERROR en la generación de imagen: {str(e)}")
