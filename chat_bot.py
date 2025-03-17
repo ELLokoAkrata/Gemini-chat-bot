@@ -123,16 +123,6 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
     
     st.info("🌀 Generando imagen, aguanta la energía del caos...")
     try:
-        # Configuración optimizada para generación de contenido
-        generate_content_config = types.GenerateContentConfig(
-            temperature=TEMPERATURE,
-            top_p=TOP_P,
-            top_k=TOP_K,
-            max_output_tokens=MAX_OUTPUT_TOKENS,
-            response_modalities=["text", "image"],
-            safety_settings=SAFETY_SETTINGS  # Aplicamos la configuración sin censura
-        )
-        
         # Preparamos el contenido para la API
         if is_modified and original_image:
             # Para modificación, enviamos la imagen original y el prompt
@@ -148,7 +138,11 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
         response = client.models.generate_content(
             model=MODEL_ID,
             contents=contents,
-            generation_config=generate_content_config,
+            temperature=TEMPERATURE,
+            top_p=TOP_P,
+            top_k=TOP_K,
+            max_output_tokens=MAX_OUTPUT_TOKENS,
+            safety_settings=SAFETY_SETTINGS  # Aplicamos la configuración sin censura
         )
         
         # Verificar si la respuesta es válida
