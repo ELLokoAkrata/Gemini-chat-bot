@@ -128,15 +128,6 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                 st.markdown(f"### 🖼️ Imagen {'Modificada' if is_modified else 'Generada'}")
                 st.image(image, caption=f"Prompt: {prompt}")
                 
-                # Botón de descarga
-                with open(output_filename, "rb") as file:
-                    st.download_button(
-                        label=f"📥 Descargar imagen {'modificada' if is_modified else 'generada'}",
-                        data=file,
-                        file_name=output_filename,
-                        mime="image/png"
-                    )
-                
                 # Guardar información en Firestore
                 image_data = {
                     "username": username,
@@ -156,7 +147,8 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                 st.write(part.text)
     except Exception as e:
         st.error(f"💀 ERROR en la generación de imagen: {str(e)}")
-        st.error("Detalles del error:", exc_info=True)
+        import traceback
+        st.error(f"Detalles del error:\n{traceback.format_exc()}")
     return None
 
 # --------------------- Interfaz Streamlit ---------------------
