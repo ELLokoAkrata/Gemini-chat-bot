@@ -131,7 +131,18 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
     # Generar nombre de archivo único
     output_filename = generate_filename(username, is_modified)
     
-    st.info("🌀 Generando imagen, aguanta la energía del caos...")
+    # Centrar y limitar el ancho del mensaje de información
+    col1, col2, col3 = st.columns([1, 3, 1])
+    with col2:
+        st.markdown(
+            """
+            <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(0, 100, 0, 0.2); padding: 10px; border-radius: 5px;">
+                🌀 Generando imagen, aguanta la energía del caos...
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+    
     try:
         # Preparamos el contenido para la API
         if is_modified and original_image:
@@ -153,12 +164,32 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
         
         # Verificar si la respuesta es válida
         if not response or not response.candidates:
-            st.error("💀 La respuesta del modelo está vacía")
+            # Centrar y limitar el ancho del mensaje de error
+            col1, col2, col3 = st.columns([1, 3, 1])
+            with col2:
+                st.markdown(
+                    """
+                    <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
+                        💀 La respuesta del modelo está vacía
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
             return None
             
         # Verificar si hay contenido en la respuesta
         if not response.candidates[0].content:
-            st.error("💀 No hay contenido en la respuesta del modelo")
+            # Centrar y limitar el ancho del mensaje de error
+            col1, col2, col3 = st.columns([1, 3, 1])
+            with col2:
+                st.markdown(
+                    """
+                    <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
+                        💀 No hay contenido en la respuesta del modelo
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
             return None
             
         # Iterar sobre las partes de la respuesta
@@ -239,9 +270,26 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
             elif hasattr(part, 'text') and part.text:
                 st.write(part.text)
     except Exception as e:
-        st.error(f"💀 ERROR en la generación de imagen: {str(e)}")
-        import traceback
-        st.error(f"Detalles del error:\n{traceback.format_exc()}")
+        # Centrar y limitar el ancho del mensaje de error
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            st.markdown(
+                f"""
+                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
+                    💀 ERROR en la generación de imagen: {str(e)}
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
+            import traceback
+            st.markdown(
+                f"""
+                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
+                    Detalles del error:<br>{traceback.format_exc().replace(chr(10), '<br>')}
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
     return None
 
 # --------------------- Interfaz Streamlit ---------------------
@@ -261,6 +309,12 @@ st.markdown("""
     .stTextInput input, .stTextArea textarea {
         max-width: 500px !important;
         margin: 0 auto;
+    }
+    /* Ajustar el área de texto para que crezca verticalmente */
+    .stTextArea textarea {
+        resize: vertical !important;
+        min-height: 100px !important;
+        overflow-y: auto !important;
     }
     /* Estilo para centrar los botones */
     .stButton button {
@@ -329,8 +383,9 @@ if st.session_state.get("logged_in", False):
         col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
             with st.form("image_generation_form"):
-                prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:", 
-                                           value=st.session_state.get("selected_prompt", ""))
+                prompt_input = st.text_area("💡 Ingresa el prompt para generar imagen:", 
+                                          value=st.session_state.get("selected_prompt", ""),
+                                          height=100)
                 submit_gen = st.form_submit_button("Generar Imagen")
         
         # Generación de imagen (FUERA del formulario)
@@ -350,8 +405,9 @@ if st.session_state.get("logged_in", False):
             col1, col2, col3 = st.columns([1, 3, 1])
             with col2:
                 with st.form("immediate_modification_form"):
-                    mod_prompt = st.text_input("💡 Ingresa el prompt para modificar:", 
-                                             value=st.session_state.get("selected_mod_prompt", ""))
+                    mod_prompt = st.text_area("💡 Ingresa el prompt para modificar:", 
+                                            value=st.session_state.get("selected_mod_prompt", ""),
+                                            height=100)
                     submit_immediate_mod = st.form_submit_button("Modificar Imagen")
             
             # Procesamiento de la modificación (FUERA del formulario)
@@ -359,7 +415,17 @@ if st.session_state.get("logged_in", False):
                 try:
                     last_image = st.session_state["last_generated_image"]
                     if "image" not in last_image:
-                        st.error("💀 Error: La imagen original no está disponible en memoria")
+                        # Centrar y limitar el ancho del mensaje de error
+                        col1, col2, col3 = st.columns([1, 3, 1])
+                        with col2:
+                            st.markdown(
+                                """
+                                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
+                                    💀 Error: La imagen original no está disponible en memoria
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
+                            )
                         st.stop()
                     
                     original_image = last_image["image"]
@@ -373,9 +439,26 @@ if st.session_state.get("logged_in", False):
                     )
                     
                 except Exception as e:
-                    st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
-                    import traceback
-                    st.error(f"Detalles del error:\n{traceback.format_exc()}")
+                    # Centrar y limitar el ancho del mensaje de error
+                    col1, col2, col3 = st.columns([1, 3, 1])
+                    with col2:
+                        st.markdown(
+                            f"""
+                            <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
+                                💀 ERROR al modificar la imagen: {str(e)}
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
+                        import traceback
+                        st.markdown(
+                            f"""
+                            <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
+                                Detalles del error:<br>{traceback.format_exc().replace(chr(10), '<br>')}
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
     
     with tab2:
         st.markdown("<h3 style='text-align: center;'>🌟 Sube tu imagen para modificarla</h3>", unsafe_allow_html=True)
@@ -413,8 +496,9 @@ if st.session_state.get("logged_in", False):
         col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
             with st.form("image_modification_form"):
-                mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", 
-                                         value=st.session_state.get("selected_mod_prompt", ""))
+                mod_prompt = st.text_area("💡 Ingresa el prompt para modificar la imagen:", 
+                                        value=st.session_state.get("selected_mod_prompt", ""),
+                                        height=100)
                 submit_mod = st.form_submit_button("Modificar Imagen")
         
         # Procesamiento de la modificación (FUERA del formulario)
@@ -426,11 +510,31 @@ if st.session_state.get("logged_in", False):
                 elif "last_generated_image" in st.session_state:
                     last_image = st.session_state["last_generated_image"]
                     if "image" not in last_image:
-                        st.error("💀 Error: La imagen original no está disponible en memoria")
+                        # Centrar y limitar el ancho del mensaje de error
+                        col1, col2, col3 = st.columns([1, 3, 1])
+                        with col2:
+                            st.markdown(
+                                """
+                                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
+                                    💀 Error: La imagen original no está disponible en memoria
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
+                            )
                         st.stop()
                     original_image = last_image["image"]
                 else:
-                    st.error("💀 No hay imagen disponible para modificar. Sube una imagen o genera una nueva.")
+                    # Centrar y limitar el ancho del mensaje de error
+                    col1, col2, col3 = st.columns([1, 3, 1])
+                    with col2:
+                        st.markdown(
+                            """
+                            <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
+                                💀 No hay imagen disponible para modificar. Sube una imagen o genera una nueva.
+                            </div>
+                            """, 
+                            unsafe_allow_html=True
+                        )
                     st.stop()
                 
                 # Generar imagen modificada
@@ -442,9 +546,26 @@ if st.session_state.get("logged_in", False):
                 )
                 
             except Exception as e:
-                st.error(f"💀 ERROR al modificar la imagen: {str(e)}")
-                import traceback
-                st.error(f"Detalles del error:\n{traceback.format_exc()}")
+                # Centrar y limitar el ancho del mensaje de error
+                col1, col2, col3 = st.columns([1, 3, 1])
+                with col2:
+                    st.markdown(
+                        f"""
+                        <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
+                            💀 ERROR al modificar la imagen: {str(e)}
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
+                    import traceback
+                    st.markdown(
+                        f"""
+                        <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
+                            Detalles del error:<br>{traceback.format_exc().replace(chr(10), '<br>')}
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
     
     # Botones de descarga (fuera de los tabs)
     st.markdown("---")
