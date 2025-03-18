@@ -121,10 +121,25 @@ def save_binary_file(file_name, data):
 
 def display_image_with_expander(image, caption, key_prefix, is_preview=True):
     """Muestra una imagen centrada en tamaño compacto para ahorrar espacio"""
-    # Centrar la imagen con un contenedor y CSS
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.image(image, caption=caption, width=300)
+    # Convertir la imagen a base64 para mostrarla con HTML personalizado
+    from io import BytesIO
+    import base64
+    
+    # Convertir imagen a bytes y luego a base64
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    
+    # Generar HTML personalizado con la imagen perfectamente centrada
+    html = f"""
+    <div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin: 0 auto; width: 100%;">
+        <img src="data:image/png;base64,{img_str}" style="width: 300px; margin: 0 auto; display: block;" />
+        <p style="text-align: center; margin-top: 5px; color: #7f7f7f; font-size: 0.9em;">{caption}</p>
+    </div>
+    """
+    
+    # Mostrar HTML
+    st.markdown(html, unsafe_allow_html=True)
 
 def generate_and_save_image(prompt: str, username: str, is_modified: bool = False, original_image=None):
     """Genera una imagen a partir de un prompt, la guarda localmente y la sube a Firebase Storage."""
@@ -203,7 +218,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                 image.save(output_filename)
                 
                 # Mostrar la imagen con su descripción
-                st.markdown(f"### 🖼️ Imagen {'Modificada' if is_modified else 'Generada'}")
+                st.markdown("<h3 style='text-align: center;'>🖼️ Imagen {}</h3>".format('Modificada' if is_modified else 'Generada'), unsafe_allow_html=True)
                 
                 # Usar la función simplificada para mostrar la imagen
                 display_image_with_expander(
@@ -231,7 +246,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                 if generated_text:
                     # Container para reducir el ancho del texto
                     with st.container():
-                        st.markdown("### 📝 Texto generado")
+                        st.markdown("<h3 style='text-align: center;'>📝 Texto generado</h3>", unsafe_allow_html=True)
                         for text in generated_text:
                             # Limitar el ancho del texto usando CSS más restrictivo
                             st.markdown(
@@ -320,6 +335,10 @@ st.markdown("""
     .stButton button {
         margin: 0 auto;
         display: block;
+    }
+    /* Centrar los títulos */
+    h1, h2, h3 {
+        text-align: center !important;
     }
     </style>
 """, unsafe_allow_html=True)
