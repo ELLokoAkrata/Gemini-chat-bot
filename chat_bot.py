@@ -120,32 +120,9 @@ def save_binary_file(file_name, data):
         f.write(data)
 
 def display_image_with_expander(image, caption, key_prefix, is_preview=True):
-    """Muestra una imagen con la opción de expandirla a pantalla completa"""
-    # Crear un identificador único para esta imagen
-    img_key = f"{key_prefix}_{datetime.now().strftime('%H%M%S%f')}"
-    
-    # Estado para controlar el tamaño de la imagen
-    if f"expanded_{img_key}" not in st.session_state:
-        st.session_state[f"expanded_{img_key}"] = False
-    
-    # Columnas para organizar la vista
-    col1, col2 = st.columns([4, 1])
-    
-    with col1:
-        # Vista previa o expandida según el estado
-        if is_preview and not st.session_state[f"expanded_{img_key}"]:
-            # Vista previa (tamaño reducido)
-            st.image(image, caption=caption, width=350)
-        else:
-            # Vista completa
-            st.image(image, caption=caption, use_container_width=True)
-    
-    with col2:
-        # Botón para alternar entre vista previa y completa
-        button_label = "🔍 Ver completa" if is_preview and not st.session_state[f"expanded_{img_key}"] else "🔍 Ver reducida"
-        if st.button(button_label, key=f"btn_{img_key}"):
-            st.session_state[f"expanded_{img_key}"] = not st.session_state[f"expanded_{img_key}"]
-            st.rerun()
+    """Muestra una imagen en tamaño compacto para ahorrar espacio"""
+    # Mostrar la imagen en tamaño reducido (Streamlit ya ofrece opción de expandir)
+    st.image(image, caption=caption, width=300)
 
 def generate_and_save_image(prompt: str, username: str, is_modified: bool = False, original_image=None):
     """Genera una imagen a partir de un prompt, la guarda localmente y la sube a Firebase Storage."""
@@ -195,7 +172,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                 # Mostrar la imagen con su descripción
                 st.markdown(f"### 🖼️ Imagen {'Modificada' if is_modified else 'Generada'}")
                 
-                # Usar la nueva función para mostrar la imagen con opción de expandir
+                # Usar la función simplificada para mostrar la imagen
                 display_image_with_expander(
                     image=image, 
                     caption=f"Prompt: {prompt}", 
@@ -219,9 +196,19 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                         generated_text.append(part.text)
                 
                 if generated_text:
-                    st.markdown("### 📝 Texto generado por el modelo")
-                    for text in generated_text:
-                        st.markdown(f"*{text}*")
+                    # Container para reducir el ancho del texto
+                    with st.container():
+                        st.markdown("### 📝 Texto generado")
+                        for text in generated_text:
+                            # Limitar el ancho del texto usando CSS
+                            st.markdown(
+                                f"""
+                                <div style="max-width: 600px;">
+                                    <em>{text}</em>
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
+                            )
                     
                     # Agregar el texto generado a los datos de Firestore
                     image_data["generated_text"] = generated_text
