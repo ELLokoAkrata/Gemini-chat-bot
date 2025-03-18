@@ -120,9 +120,11 @@ def save_binary_file(file_name, data):
         f.write(data)
 
 def display_image_with_expander(image, caption, key_prefix, is_preview=True):
-    """Muestra una imagen en tamaño compacto para ahorrar espacio"""
-    # Mostrar la imagen en tamaño reducido (Streamlit ya ofrece opción de expandir)
-    st.image(image, caption=caption, width=300)
+    """Muestra una imagen centrada en tamaño compacto para ahorrar espacio"""
+    # Centrar la imagen con un contenedor y CSS
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image(image, caption=caption, width=300)
 
 def generate_and_save_image(prompt: str, username: str, is_modified: bool = False, original_image=None):
     """Genera una imagen a partir de un prompt, la guarda localmente y la sube a Firebase Storage."""
@@ -200,10 +202,10 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                     with st.container():
                         st.markdown("### 📝 Texto generado")
                         for text in generated_text:
-                            # Limitar el ancho del texto usando CSS
+                            # Limitar el ancho del texto usando CSS más restrictivo
                             st.markdown(
                                 f"""
-                                <div style="max-width: 600px;">
+                                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto;">
                                     <em>{text}</em>
                                 </div>
                                 """, 
@@ -255,6 +257,16 @@ st.set_page_config(
 st.markdown("""
     <style>
     .stApp { background-color: black; color: #00ff00; }
+    /* Estilo para limitar el ancho de los inputs */
+    .stTextInput input, .stTextArea textarea {
+        max-width: 500px !important;
+        margin: 0 auto;
+    }
+    /* Estilo para centrar los botones */
+    .stButton button {
+        margin: 0 auto;
+        display: block;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -304,15 +316,22 @@ if st.session_state.get("logged_in", False):
     
     with tab1:
         # Mostrar ejemplos de prompts
-        st.markdown("### 🌟 Ejemplos de Prompts:")
-        for prompt in EXAMPLE_PROMPTS:
-            if st.button(f"Usar: {prompt}"):
-                st.session_state["selected_prompt"] = prompt
+        st.markdown("<h3 style='text-align: center;'>🌟 Ejemplos de Prompts:</h3>", unsafe_allow_html=True)
         
-        with st.form("image_generation_form"):
-            prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:", 
-                                       value=st.session_state.get("selected_prompt", ""))
-            submit_gen = st.form_submit_button("Generar Imagen")
+        # Centrar y ajustar los botones de ejemplo
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            for prompt in EXAMPLE_PROMPTS:
+                if st.button(f"Usar: {prompt}"):
+                    st.session_state["selected_prompt"] = prompt
+        
+        # Centrar el formulario
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            with st.form("image_generation_form"):
+                prompt_input = st.text_input("💡 Ingresa el prompt para generar imagen:", 
+                                           value=st.session_state.get("selected_prompt", ""))
+                submit_gen = st.form_submit_button("Generar Imagen")
         
         # Generación de imagen (FUERA del formulario)
         if submit_gen and prompt_input:
@@ -325,13 +344,15 @@ if st.session_state.get("logged_in", False):
         # Mostrar opción de modificación inmediata (FUERA del formulario)
         if st.session_state.get("current_generated_image", False) and "last_generated_image" in st.session_state:
             st.markdown("---")
-            st.markdown("### 🔄 ¿Quieres modificar esta imagen?")
+            st.markdown("<h3 style='text-align: center;'>🔄 ¿Quieres modificar esta imagen?</h3>", unsafe_allow_html=True)
             
-            # Formulario de modificación separado
-            with st.form("immediate_modification_form"):
-                mod_prompt = st.text_input("💡 Ingresa el prompt para modificar:", 
-                                         value=st.session_state.get("selected_mod_prompt", ""))
-                submit_immediate_mod = st.form_submit_button("Modificar Imagen")
+            # Formulario de modificación separado y centrado
+            col1, col2, col3 = st.columns([1, 3, 1])
+            with col2:
+                with st.form("immediate_modification_form"):
+                    mod_prompt = st.text_input("💡 Ingresa el prompt para modificar:", 
+                                             value=st.session_state.get("selected_mod_prompt", ""))
+                    submit_immediate_mod = st.form_submit_button("Modificar Imagen")
             
             # Procesamiento de la modificación (FUERA del formulario)
             if submit_immediate_mod:
@@ -357,14 +378,18 @@ if st.session_state.get("logged_in", False):
                     st.error(f"Detalles del error:\n{traceback.format_exc()}")
     
     with tab2:
-        st.markdown("### 🌟 Sube tu imagen para modificarla")
-        uploaded_file = st.file_uploader("Sube una imagen para modificarla", type=["png", "jpg", "jpeg"])
+        st.markdown("<h3 style='text-align: center;'>🌟 Sube tu imagen para modificarla</h3>", unsafe_allow_html=True)
+        
+        # Centrar el uploader
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            uploaded_file = st.file_uploader("Sube una imagen para modificarla", type=["png", "jpg", "jpeg"])
         
         if uploaded_file is not None:
             # Convertir el archivo subido a imagen PIL
             image = Image.open(uploaded_file)
             
-            # Usar la nueva función para mostrar la imagen con opción de expandir
+            # Usar la función para mostrar la imagen centrada
             display_image_with_expander(
                 image=image, 
                 caption="Imagen subida", 
@@ -375,15 +400,22 @@ if st.session_state.get("logged_in", False):
             st.session_state["uploaded_image"] = image
         
         # Mostrar ejemplos de prompts de modificación
-        st.markdown("### 🌟 Ejemplos de Modificación:")
-        for prompt in EXAMPLE_MOD_PROMPTS:
-            if st.button(f"Usar: {prompt}", key=f"mod_{prompt}"):
-                st.session_state["selected_mod_prompt"] = prompt
+        st.markdown("<h3 style='text-align: center;'>🌟 Ejemplos de Modificación:</h3>", unsafe_allow_html=True)
         
-        with st.form("image_modification_form"):
-            mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", 
-                                     value=st.session_state.get("selected_mod_prompt", ""))
-            submit_mod = st.form_submit_button("Modificar Imagen")
+        # Centrar los botones de ejemplos de modificación
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            for prompt in EXAMPLE_MOD_PROMPTS:
+                if st.button(f"Usar: {prompt}", key=f"mod_{prompt}"):
+                    st.session_state["selected_mod_prompt"] = prompt
+        
+        # Centrar el formulario de modificación
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col2:
+            with st.form("image_modification_form"):
+                mod_prompt = st.text_input("💡 Ingresa el prompt para modificar la imagen:", 
+                                         value=st.session_state.get("selected_mod_prompt", ""))
+                submit_mod = st.form_submit_button("Modificar Imagen")
         
         # Procesamiento de la modificación (FUERA del formulario)
         if submit_mod:
@@ -415,9 +447,14 @@ if st.session_state.get("logged_in", False):
                 st.error(f"Detalles del error:\n{traceback.format_exc()}")
     
     # Botones de descarga (fuera de los tabs)
-    col1, col2 = st.columns(2)
+    st.markdown("---")
+    col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
+        st.write("")  # Espaciador
+        
+    with col2:
+        # Centrar los botones de descarga
         if "last_generated_image" in st.session_state:
             last_image = st.session_state["last_generated_image"]
             if os.path.exists(last_image["filename"]):
@@ -428,8 +465,7 @@ if st.session_state.get("logged_in", False):
                         file_name=last_image["filename"],
                         mime="image/png"
                     )
-    
-    with col2:
+        
         if "last_modified_image" in st.session_state:
             last_mod_image = st.session_state["last_modified_image"]
             if os.path.exists(last_mod_image["filename"]):
@@ -440,6 +476,9 @@ if st.session_state.get("logged_in", False):
                         file_name=last_mod_image["filename"],
                         mime="image/png"
                     )
+    
+    with col3:
+        st.write("")  # Espaciador
 else:
     st.markdown("""
     ## 🌌 GUÍA DE INICIACIÓN
