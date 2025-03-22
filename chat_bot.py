@@ -128,7 +128,7 @@ def display_image_with_expander(image, caption, key_prefix, is_preview=True):
         st.image(
             image=image,
             caption=caption,
-            use_column_width=True,  # Hace que la imagen se ajuste al ancho de la columna
+            use_container_width=True,  # Parámetro actualizado (antes era use_column_width)
             output_format="PNG"
         )
         
