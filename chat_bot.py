@@ -81,7 +81,7 @@ SAFETY_CONFIG = types.GenerateContentConfig(
 # Ejemplos de prompts
 EXAMPLE_PROMPTS = [
     "Create a surreal horror image of an psycho anarcho-punk",
-    "Generate a cyberpunk cityscape with neon lights and flying cars",
+    "A psycho punk monster with leather jacket with anarcho-punk patches and big head and several eyes in psychedelic acid  trip",
     "Create a psychedelic portrait of a digital shaman",
     "Generate a dystopian future with AI overlords",
     "Create a glitch art representation of human consciousness"
@@ -133,7 +133,7 @@ def display_image_with_expander(image, caption, key_prefix, is_preview=True):
         )
         
         # Agregamos un mensaje para indicar que se puede hacer clic en la imagen
-        st.caption("🔍 Haz clic en la imagen para verla en pantalla completa")
+        st.caption("🔍 Haz clic en el cuadrito  de full screen para ver la imagen en tamaño original")
 
 def generate_and_save_image(prompt: str, username: str, is_modified: bool = False, original_image=None):
     """Genera una imagen a partir de un prompt, la guarda localmente y la sube a Firebase Storage."""
