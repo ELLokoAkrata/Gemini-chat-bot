@@ -169,7 +169,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                 st.markdown(
                     """
                     <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
-                        💀 La respuesta del modelo está vacía
+                        💀 La respuesta del modelo está vacía intenta de nuevo, cambia de prompt; si el error continua comunícate con el desarollador.
                     </div>
                     """, 
                     unsafe_allow_html=True
