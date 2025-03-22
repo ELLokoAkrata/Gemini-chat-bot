@@ -120,50 +120,20 @@ def save_binary_file(file_name, data):
         f.write(data)
 
 def display_image_with_expander(image, caption, key_prefix, is_preview=True):
-    """Muestra una imagen centrada con un cuadrito de zoom que permite verla en grande"""
-    from io import BytesIO
-    import base64
-    
-    # Convertir imagen a bytes y luego a base64
-    buffered = BytesIO()
-    image.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue()).decode()
-    
-    # HTML con modal para visualizar la imagen en grande
-    html = f"""
-    <div style="text-align: center; margin: 0 auto;">
-      <div id="image-container-{key_prefix}" style="position: relative; display: inline-block;">
-        <img id="img-{key_prefix}" src="data:image/png;base64,{img_str}" style="width: 300px; display: block; cursor: pointer;" onclick="openModal_{key_prefix}()">
-        <div style="position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.5); color: #fff; padding: 2px 5px; font-size: 12px; border-radius: 3px;">
-          🔍
-        </div>
-      </div>
-      <p style="text-align: center; margin-top: 5px; color: #7f7f7f; font-size: 0.9em;">{caption}</p>
-    </div>
-
-    <!-- Modal para imagen ampliada -->
-    <div id="modal-{key_prefix}" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow:auto; background-color: rgba(0,0,0,0.9);">
-      <span id="close-{key_prefix}" style="position: absolute; top: 20px; right: 45px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer;" onclick="closeModal_{key_prefix}()">&times;</span>
-      <img id="modal-content-{key_prefix}" style="margin: auto; display: block; max-width: 90%; max-height: 90%;">
-      <div id="caption-{key_prefix}" style="text-align: center; color: #ccc; padding: 10px;"></div>
-    </div>
-
-    <script>
-    function openModal_{key_prefix}() {{
-      var modal = document.getElementById("modal-{key_prefix}");
-      var modalImg = document.getElementById("modal-content-{key_prefix}");
-      var captionText = document.getElementById("caption-{key_prefix}");
-      modal.style.display = "block";
-      modalImg.src = document.getElementById("img-{key_prefix}").src;
-      captionText.innerHTML = "{caption}";
-    }}
-    function closeModal_{key_prefix}() {{
-      var modal = document.getElementById("modal-{key_prefix}");
-      modal.style.display = "none";
-    }}
-    </script>
-    """
-    st.markdown(html, unsafe_allow_html=True)
+    """Muestra una imagen centrada que puede verse en pantalla completa usando el lightbox nativo de Streamlit"""
+    # Creamos un contenedor para centrar la imagen
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # Usamos el componente nativo de Streamlit que incluye lightbox
+        st.image(
+            image=image,
+            caption=caption,
+            use_column_width=True,  # Hace que la imagen se ajuste al ancho de la columna
+            output_format="PNG"
+        )
+        
+        # Agregamos un mensaje para indicar que se puede hacer clic en la imagen
+        st.caption("🔍 Haz clic en la imagen para verla en pantalla completa")
 
 def generate_and_save_image(prompt: str, username: str, is_modified: bool = False, original_image=None):
     """Genera una imagen a partir de un prompt, la guarda localmente y la sube a Firebase Storage."""
