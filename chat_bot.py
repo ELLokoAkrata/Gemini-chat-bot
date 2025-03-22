@@ -45,7 +45,7 @@ GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 client = genai.Client(api_key=GOOGLE_API_KEY)
 
 # Configuración del modelo de Generative AI
-MODEL_ID = 'gemini-2.0-flash-exp-image-generation'
+MODEL_ID = 'gemini-2.0-flash-exp-image-generation'  # Volvemos al modelo original
 TEMPERATURE = 1.0
 TOP_P = 0.95
 TOP_K = 40
@@ -120,36 +120,46 @@ def save_binary_file(file_name, data):
         f.write(data)
 
 def display_image_with_expander(image, caption, key_prefix, is_preview=True):
-    """Muestra una imagen centrada y permite verla en pantalla completa"""
+    """Muestra una imagen centrada con un cuadrito de zoom que permite verla en grande"""
     from io import BytesIO
     import base64
-
-    # Convertir la imagen a bytes y luego a base64
+    
+    # Convertir imagen a bytes y luego a base64
     buffered = BytesIO()
     image.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
-
-    # HTML que muestra la imagen pequeña con un botón que activa el modo pantalla completa
+    
+    # HTML con modal para visualizar la imagen en grande
     html = f"""
-    <div id="container-{key_prefix}" style="position: relative; text-align: center; margin: 0 auto;">
-        <img id="img-{key_prefix}" src="data:image/png;base64,{img_str}" style="width: 300px; display: block;" />
-        <button onclick="openFullScreen_{key_prefix}()" style="position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.5); color: #fff; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">
-            Pantalla completa
-        </button>
-        <p style="color: #7f7f7f; font-size: 0.9em;">{caption}</p>
+    <div style="text-align: center; margin: 0 auto;">
+      <div id="image-container-{key_prefix}" style="position: relative; display: inline-block;">
+        <img id="img-{key_prefix}" src="data:image/png;base64,{img_str}" style="width: 300px; display: block; cursor: pointer;" onclick="openModal_{key_prefix}()">
+        <div style="position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.5); color: #fff; padding: 2px 5px; font-size: 12px; border-radius: 3px;">
+          🔍
+        </div>
+      </div>
+      <p style="text-align: center; margin-top: 5px; color: #7f7f7f; font-size: 0.9em;">{caption}</p>
     </div>
+
+    <!-- Modal para imagen ampliada -->
+    <div id="modal-{key_prefix}" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow:auto; background-color: rgba(0,0,0,0.9);">
+      <span id="close-{key_prefix}" style="position: absolute; top: 20px; right: 45px; color: #fff; font-size: 40px; font-weight: bold; cursor: pointer;" onclick="closeModal_{key_prefix}()">&times;</span>
+      <img id="modal-content-{key_prefix}" style="margin: auto; display: block; max-width: 90%; max-height: 90%;">
+      <div id="caption-{key_prefix}" style="text-align: center; color: #ccc; padding: 10px;"></div>
+    </div>
+
     <script>
-    function openFullScreen_{key_prefix}() {{
-      var elem = document.getElementById("container-{key_prefix}");
-      if (elem.requestFullscreen) {{
-        elem.requestFullscreen();
-      }} else if (elem.mozRequestFullScreen) {{
-        elem.mozRequestFullScreen();
-      }} else if (elem.webkitRequestFullscreen) {{
-        elem.webkitRequestFullscreen();
-      }} else if (elem.msRequestFullscreen) {{
-        elem.msRequestFullscreen();
-      }}
+    function openModal_{key_prefix}() {{
+      var modal = document.getElementById("modal-{key_prefix}");
+      var modalImg = document.getElementById("modal-content-{key_prefix}");
+      var captionText = document.getElementById("caption-{key_prefix}");
+      modal.style.display = "block";
+      modalImg.src = document.getElementById("img-{key_prefix}").src;
+      captionText.innerHTML = "{caption}";
+    }}
+    function closeModal_{key_prefix}() {{
+      var modal = document.getElementById("modal-{key_prefix}");
+      modal.style.display = "none";
     }}
     </script>
     """
@@ -163,7 +173,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
     placeholder = st.empty()
     placeholder.markdown(
         """
-        <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(0,100,0,0.2); padding: 10px; border-radius: 5px;">
+        <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(0, 100, 0, 0.2); padding: 10px; border-radius: 5px;">
             🌀 Generando imagen, aguanta la energía del caos...
         </div>
         """, 
@@ -188,7 +198,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
             with col2:
                 st.markdown(
                     """
-                    <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.2); padding: 10px; border-radius: 5px;">
+                    <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
                         💀 La respuesta del modelo está vacía
                     </div>
                     """, 
@@ -202,7 +212,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
             with col2:
                 st.markdown(
                     """
-                    <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.2); padding: 10px; border-radius: 5px;">
+                    <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
                         💀 No hay contenido en la respuesta del modelo
                     </div>
                     """, 
@@ -244,7 +254,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                         for text in generated_text:
                             st.markdown(
                                 f"""
-                                <div style="max-width: 450px; margin: 0 auto;">
+                                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto;">
                                     <em>{text}</em>
                                 </div>
                                 """, 
@@ -278,7 +288,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
         with col2:
             st.markdown(
                 f"""
-                <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.2); padding: 10px; border-radius: 5px;">
+                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
                     💀 ERROR en la generación de imagen: {str(e)}
                 </div>
                 """, 
@@ -287,7 +297,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
             import traceback
             st.markdown(
                 f"""
-                <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
+                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
                     Detalles del error:<br>{traceback.format_exc().replace(chr(10), '<br>')}
                 </div>
                 """, 
@@ -378,8 +388,8 @@ if st.session_state.get("logged_in", False):
         with col2:
             with st.form("image_generation_form"):
                 prompt_input = st.text_area("💡 Ingresa el prompt para generar imagen:", 
-                                            value=st.session_state.get("selected_prompt", ""),
-                                            height=100)
+                                          value=st.session_state.get("selected_prompt", ""),
+                                          height=100)
                 submit_gen = st.form_submit_button("Generar Imagen")
         
         if submit_gen and prompt_input:
@@ -394,8 +404,8 @@ if st.session_state.get("logged_in", False):
             with col2:
                 with st.form("immediate_modification_form"):
                     mod_prompt = st.text_area("💡 Ingresa el prompt para modificar:", 
-                                              value=st.session_state.get("selected_mod_prompt", ""),
-                                              height=100)
+                                            value=st.session_state.get("selected_mod_prompt", ""),
+                                            height=100)
                     submit_immediate_mod = st.form_submit_button("Modificar Imagen")
             if submit_immediate_mod:
                 try:
@@ -405,7 +415,7 @@ if st.session_state.get("logged_in", False):
                         with col2:
                             st.markdown(
                                 """
-                                <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.2); padding: 10px; border-radius: 5px;">
+                                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
                                     💀 Error: La imagen original no está disponible en memoria
                                 </div>
                                 """, 
@@ -426,7 +436,7 @@ if st.session_state.get("logged_in", False):
                     with col2:
                         st.markdown(
                             f"""
-                            <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.2); padding: 10px; border-radius: 5px;">
+                            <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
                                 💀 ERROR al modificar la imagen: {str(e)}
                             </div>
                             """, 
@@ -435,7 +445,7 @@ if st.session_state.get("logged_in", False):
                         import traceback
                         st.markdown(
                             f"""
-                            <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
+                            <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
                                 Detalles del error:<br>{traceback.format_exc().replace(chr(10), '<br>')}
                             </div>
                             """, 
@@ -468,8 +478,8 @@ if st.session_state.get("logged_in", False):
         with col2:
             with st.form("image_modification_form"):
                 mod_prompt = st.text_area("💡 Ingresa el prompt para modificar la imagen:", 
-                                          value=st.session_state.get("selected_mod_prompt", ""),
-                                          height=100)
+                                        value=st.session_state.get("selected_mod_prompt", ""),
+                                        height=100)
                 submit_mod = st.form_submit_button("Modificar Imagen")
         
         if submit_mod:
@@ -483,7 +493,7 @@ if st.session_state.get("logged_in", False):
                         with col2:
                             st.markdown(
                                 """
-                                <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.2); padding: 10px; border-radius: 5px;">
+                                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
                                     💀 Error: La imagen original no está disponible en memoria
                                 </div>
                                 """, 
@@ -496,7 +506,7 @@ if st.session_state.get("logged_in", False):
                     with col2:
                         st.markdown(
                             """
-                            <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.2); padding: 10px; border-radius: 5px;">
+                            <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
                                 💀 No hay imagen disponible para modificar. Sube una imagen o genera una nueva.
                             </div>
                             """, 
@@ -516,7 +526,7 @@ if st.session_state.get("logged_in", False):
                 with col2:
                     st.markdown(
                         f"""
-                        <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.2); padding: 10px; border-radius: 5px;">
+                        <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">
                             💀 ERROR al modificar la imagen: {str(e)}
                         </div>
                         """, 
@@ -525,7 +535,7 @@ if st.session_state.get("logged_in", False):
                     import traceback
                     st.markdown(
                         f"""
-                        <div style="max-width: 450px; margin: 0 auto; text-align: center; background-color: rgba(180,0,0,0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
+                        <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.1); padding: 10px; border-radius: 5px; font-size: 0.8em;">
                             Detalles del error:<br>{traceback.format_exc().replace(chr(10), '<br>')}
                         </div>
                         """, 
@@ -574,3 +584,4 @@ else:
     
 st.markdown("---")
 st.caption("Ψ Sistema EsquizoAI v2.3.5 | Realidad: Beta")
+
