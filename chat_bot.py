@@ -218,19 +218,7 @@ def generate_and_save_image(prompt: str, username: str, is_modified: bool = Fals
                     if hasattr(part, 'text') and part.text:
                         generated_text.append(part.text)
                 
-                if generated_text:
-                    with st.container():
-                        st.markdown("<h3 style='text-align: center;'>📝 Texto generado</h3>", unsafe_allow_html=True)
-                        for text in generated_text:
-                            st.markdown(
-                                f"""
-                                <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto;">
-                                    <em>{text}</em>
-                                </div>
-                                """, 
-                                unsafe_allow_html=True
-                            )
-                    image_data_firestore["generated_text"] = generated_text
+
                 
                 db.collection("imagenes").document(output_filename).set(image_data_firestore)
                 remote_path = f"gemini images/{output_filename}"
