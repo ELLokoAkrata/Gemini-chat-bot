@@ -3,6 +3,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore, storage
 from google.cloud.firestore_v1.base_query import FieldFilter
 import uuid
+from datetime import timedelta
+from src.config import STORAGE_ROOT_FOLDER
 
 def initialize_firebase():
     """
@@ -60,3 +62,53 @@ def get_or_create_user(db, user_name: str):
             "user_uuid": new_uuid
         })
         return new_uuid
+
+# --- Funciones para el Dashboard de Administración ---
+
+def get_all_users(db):
+    """Recupera todos los usuarios de la colección 'usuarios'."""
+    users_ref = db.collection("usuarios")
+    return [doc.to_dict() for doc in users_ref.stream()]
+
+def get_project_summary_data(db):
+    """
+    Realiza una consulta de grupo para obtener un resumen de la actividad
+    del proyecto 'psycho_generator_images'.
+    Devuelve un diccionario con el recuento de imágenes por usuario.
+    """
+    # Primero, obtenemos un mapa de UUID a nombre para enriquecer los resultados
+    all_users = get_all_users(db)
+    uuid_to_name_map = {user['user_uuid']: user['nombre'] for user in all_users}
+
+    summary_data = {}
+    
+    # Hacemos una consulta de grupo en todas las colecciones 'user_images'
+    images_group_ref = db.collection_group('user_images')
+    
+    start_at = f"{STORAGE_ROOT_FOLDER}/"
+    end_at = start_at + "\uf8ff"
+
+    # Nota: Esta consulta requiere su propio índice compuesto en Firestore.
+    # La consola de Firebase te dará el enlace para crearlo si falla.
+    query = images_group_ref.where(filter=FieldFilter("storage_path", ">=", start_at)) \
+                            .where(filter=FieldFilter("storage_path", "<", end_at))
+
+    for doc in query.stream():
+        # Extraemos el UUID del usuario del path del documento
+        user_uuid = doc.reference.parent.parent.id
+        
+        if user_uuid not in summary_data:
+            summary_data[user_uuid] = {
+                "user_name": uuid_to_name_map.get(user_uuid, "Usuario Desconocido"),
+                "image_count": 0
+            }
+        summary_data[user_uuid]["image_count"] += 1
+        
+    return summary_data
+
+def get_image_public_url(storage_path: str):
+    """Genera una URL pública y firmada para un archivo en Firebase Storage."""
+    bucket = storage.bucket()
+    blob = bucket.blob(storage_path)
+    # La URL expira en 1 hora, suficiente para la visualización en el dashboard
+    return blob.generate_signed_url(version="v4", expiration=timedelta(minutes=60))

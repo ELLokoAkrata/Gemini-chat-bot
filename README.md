@@ -11,7 +11,8 @@ Puedes experimentar el Akelarre Generativo aquí:
 
 ## 🧠 Características Principales
 
-- **Ingeniería de Prompts Integrada:** La IA tiene una personalidad base (anarco-punk, ciber-rebelde) que guía todas las creaciones.
+- **Chat con Personalidad (Psycho-Bot):** Conversa directamente con una IA que posee una personalidad anarco-punk definida.
+- **Ingeniería de Prompts Integrada:** La IA de imágenes tiene una personalidad base (anarco-punk, ciber-rebelde) que guía todas las creaciones.
 - **Interpretación de Símbolos:** El sistema interpreta emojis 💀🔥🤖 como conceptos, permitiendo construir visiones de forma intuitiva directamente desde el teclado.
 - **Flujo de Login Central:** Una experiencia de inicio de sesión clara y directa, optimizada para móviles.
 - **Arquitectura Modular:** El código está completamente refactorizado en un directorio `src/` para facilitar el mantenimiento y la expansión.

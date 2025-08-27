@@ -14,3 +14,16 @@ GEMINI.md
 *.jpg
 *.jpeg
 *.gif
+
+# Ignorar el panel de administración
+admin_dashboard.py
+
+# Archivos de desarrollo y pruebas
+system.txt
+chat_ejemplo.md
+test_chat.py
+
+# Archivos de desarrollo y pruebas
+system.txt
+chat_ejemplo.md
+test_chat.py
