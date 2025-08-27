@@ -1,0 +1,13 @@
+# Configuración divertida de Gemini CLI 🚀
+have_fun: true  # ¡Activa el modo divertido!
+code_review:
+  disable: false  # Habilitamos la revisión de código
+  comment_severity_threshold: MEDIUM  # Mostrar comentarios de severidad media o mayor
+  max_review_comments: 10  # Límite de 10 comentarios por revisión
+  pull_request_opened:
+    help: true  # Mostrar ayuda
+    summary: true  # Generar resumen
+    code_review: true  # Realizar revisión de código
+  emojis: true  # Añadir emojis a los comentarios
+  jokes: true  # Incluir chistes de programación (cuando sea apropiado)
+

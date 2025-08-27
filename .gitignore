@@ -1,0 +1,13 @@
+.env
+
+# Streamlit secrets file
+.streamlit/secrets.toml
+
+# Archivos de documentación personal y de IA
+GEMINI.md
+
+# Ignorar todos los archivos de imagen
+*.png
+*.jpg
+*.jpeg
+*.gif
