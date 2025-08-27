@@ -31,8 +31,8 @@ Para mejorar la accesibilidad, especialmente en dispositivos móviles, el flujo 
 
 #### Interfaz de Generación
 -   **Título y Manifiesto:** La aplicación recibe al usuario con el título "Akelarre Generativo with Psycho-Bot" y un breve manifiesto.
--   **Invocación por Símbolos:** La interfaz presenta dos filas de botones de emojis estilizados (sigilos). Al hacer clic, los símbolos se añaden a un campo de texto, permitiendo una construcción visual del prompt.
--   **Ingeniería de Prompts:** Cada entrada del usuario (texto y emojis) es procesada por un sistema de "meta-prompting". Este sistema traduce los emojis a conceptos textuales y envuelve la solicitud del usuario en una instrucción maestra que dota a la IA de una personalidad y estética base (anarco-punk, ciberpunk, etc.), asegurando resultados coherentes con la temática.
+-   **Invocación Directa:** La interfaz se ha purificado a un único campo de texto. Se invita al usuario a escribir su visión directamente, permitiendo el uso de texto, emojis desde su teclado, o una combinación de ambos.
+-   **Ingeniería de Prompts:** Cada entrada del usuario es procesada por un sistema de "meta-prompting". Este sistema traduce los emojis conocidos a conceptos textuales y envuelve la solicitud del usuario en una instrucción maestra que dota a la IA de una personalidad y estética base (anarco-punk, ciberpunk, etc.), asegurando resultados coherentes con la temática.
 
 ### 4. Estructura del Código Modular
 
