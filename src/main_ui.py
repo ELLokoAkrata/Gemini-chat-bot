@@ -124,39 +124,6 @@ def handle_image_modification(client, user_prompt, user_uuid, original_image):
             "image": mod_image
         }
 
-def update_prompt_from_emoji(emoji, key):
-    """Callback para añadir un emoji al estado del text_area."""
-    if key not in st.session_state:
-        st.session_state[key] = ""
-    st.session_state[key] += emoji
-
-def draw_emoji_interface(text_area_key: str):
-    """Dibuja la interfaz de botones de emojis en dos filas."""
-    st.markdown("<h3 style='text-align: center;'>🔮 Invoca con Símbolos:</h3>", unsafe_allow_html=True)
-    
-    emoji_list = list(EMOJI_GRIMOIRE.keys())
-    half_point = len(emoji_list) // 2
-    
-    # Primera fila
-    cols_1 = st.columns(half_point)
-    for i, emoji in enumerate(emoji_list[:half_point]):
-        cols_1[i].button(
-            emoji, 
-            key=f"{text_area_key}_{emoji}", 
-            on_click=update_prompt_from_emoji, 
-            args=(emoji, text_area_key)
-        )
-            
-    # Segunda fila
-    cols_2 = st.columns(len(emoji_list) - half_point)
-    for i, emoji in enumerate(emoji_list[half_point:]):
-        cols_2[i].button(
-            emoji, 
-            key=f"{text_area_key}_{emoji}_2", 
-            on_click=update_prompt_from_emoji, 
-            args=(emoji, text_area_key)
-        )
-
 def run_app():
     """Función principal que ejecuta la aplicación Streamlit."""
     setup_page()
@@ -183,24 +150,18 @@ def run_app():
         tab1, tab2 = st.tabs(["🎨 Generar", "🔄 Transmutar"])
 
         with tab1:
-            # Definir la key para el text_area de esta pestaña
-            gen_key = "prompt_input_area_gen"
-            draw_emoji_interface(gen_key)
-            
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 with st.form("image_generation_form"):
-                    prompt_input = st.text_area("💡 ...o describe tu visión:", key=gen_key)
+                    prompt_input = st.text_area("💡 Invoca tu visión (puedes usar texto y emojis):", 
+                                              key="prompt_input_area_gen")
                     submit_gen = st.form_submit_button("🔥 Generar")
                 
                 if submit_gen:
                     handle_image_generation(client, prompt_input, user_uuid)
-                    st.session_state[gen_key] = "" # Limpiar
+                    st.session_state.prompt_input_area_gen = "" # Limpiar
 
         with tab2:
-            # Definir la key para el text_area de esta pestaña
-            mod_key = "prompt_input_area_mod"
-
             st.markdown("<h3 style='text-align: center;'>🌟 Sube una imagen para alterarla</h3>", unsafe_allow_html=True)
             c1, c2, c3 = st.columns([1, 2, 1])
             with c2:
@@ -215,18 +176,17 @@ def run_app():
                 st.markdown("<p style='text-align: center;'>Usando la última imagen generada.</p>", unsafe_allow_html=True)
                 display_image_with_expander(image=original_image, caption="Última imagen generada")
 
-            draw_emoji_interface(mod_key)
-
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 with st.form("image_modification_form"):
-                    mod_prompt = st.text_area("💡 ...o describe la mutación:", key=mod_key)
+                    mod_prompt = st.text_area("💡 Describe la mutación (puedes usar texto y emojis):", 
+                                            key="prompt_input_area_mod")
                     submit_mod = st.form_submit_button("🔥 Modificar")
                 
                 if submit_mod:
                     if original_image:
                         handle_image_modification(client, mod_prompt, user_uuid, original_image)
-                        st.session_state[mod_key] = "" # Limpiar
+                        st.session_state.prompt_input_area_mod = "" # Limpiar
                     else:
                         st.error("💀 No hay imagen disponible. Sube una o genera una nueva.")
 
@@ -256,7 +216,7 @@ def run_app():
                         )
     
     st.markdown("---")
-    st.caption("Ψ Sistema EsquizoAI v2.5.2 | Callback Fix")
+    st.caption("Ψ Sistema EsquizoAI v2.6.0 | Purified UI")
 
 def run_app():
     """Función principal que ejecuta la aplicación Streamlit."""
