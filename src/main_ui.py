@@ -6,7 +6,7 @@ from datetime import datetime
 from src.config import STORAGE_ROOT_FOLDER
 from src.firebase_utils import initialize_firebase, upload_image_to_storage, save_image_metadata
 from src.gemini_utils import initialize_genai_client, generate_image_from_prompt
-from src.prompt_engineering import engineer_prompt, EMOJI_GRIMOIRE
+from src.prompt_engineering import engineer_prompt
 from src.ui_components import (
     display_image_with_expander,
     generate_filename,
@@ -159,7 +159,6 @@ def run_app():
                 
                 if submit_gen:
                     handle_image_generation(client, prompt_input, user_uuid)
-                    st.session_state.prompt_input_area_gen = "" # Limpiar
 
         with tab2:
             st.markdown("<h3 style='text-align: center;'>🌟 Sube una imagen para alterarla</h3>", unsafe_allow_html=True)
@@ -186,7 +185,6 @@ def run_app():
                 if submit_mod:
                     if original_image:
                         handle_image_modification(client, mod_prompt, user_uuid, original_image)
-                        st.session_state.prompt_input_area_mod = "" # Limpiar
                     else:
                         st.error("💀 No hay imagen disponible. Sube una o genera una nueva.")
 
@@ -216,105 +214,7 @@ def run_app():
                         )
     
     st.markdown("---")
-    st.caption("Ψ Sistema EsquizoAI v2.6.0 | Purified UI")
-
-def run_app():
-    """Función principal que ejecuta la aplicación Streamlit."""
-    setup_page()
-    db = initialize_firebase()
-    client = initialize_genai_client()
-
-    if not st.session_state.get("logged_in", False):
-        # --- VISTA DE LOGIN ---
-        show_welcome_message()
-        
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            show_login_form(db)
-
-    else:
-        # --- VISTA PRINCIPAL DE LA APP ---
-        with st.sidebar:
-            st.header("💊 Control Neural")
-            st.markdown("---")
-            show_user_info()
-
-        user_uuid = st.session_state.get("user_uuid")
-        
-        tab1, tab2 = st.tabs(["🎨 Generar", "🔄 Transmutar"])
-
-        with tab1:
-            draw_emoji_interface("prompt_input_area_gen")
-            
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                with st.form("image_generation_form"):
-                    prompt_input = st.text_area("💡 ...o describe tu visión:", 
-                                              key="prompt_input_area_gen")
-                    submit_gen = st.form_submit_button("🔥 Generar")
-                
-                if submit_gen:
-                    handle_image_generation(client, prompt_input, user_uuid)
-                    st.session_state.prompt_input_area_gen = "" # Limpiar
-
-        with tab2:
-            st.markdown("<h3 style='text-align: center;'>🌟 Sube una imagen para alterarla</h3>", unsafe_allow_html=True)
-            c1, c2, c3 = st.columns([1, 2, 1])
-            with c2:
-                uploaded_file = st.file_uploader("Sube una imagen", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
-            
-            original_image = None
-            if uploaded_file is not None:
-                original_image = Image.open(uploaded_file)
-                display_image_with_expander(image=original_image, caption="Imagen a transmutar")
-            elif "last_generated_image" in st.session_state:
-                original_image = st.session_state["last_generated_image"]["image"]
-                st.markdown("<p style='text-align: center;'>Usando la última imagen generada.</p>", unsafe_allow_html=True)
-                display_image_with_expander(image=original_image, caption="Última imagen generada")
-
-            draw_emoji_interface("prompt_input_area_mod")
-
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                with st.form("image_modification_form"):
-                    mod_prompt = st.text_area("💡 ...o describe la mutación:", 
-                                            key="prompt_input_area_mod")
-                    submit_mod = st.form_submit_button("🔥 Modificar")
-                
-                if submit_mod:
-                    if original_image:
-                        handle_image_modification(client, mod_prompt, user_uuid, original_image)
-                        st.session_state.prompt_input_area_mod = "" # Limpiar
-                    else:
-                        st.error("💀 No hay imagen disponible. Sube una o genera una nueva.")
-
-        # Lógica de descarga
-        d1, d2, d3 = st.columns([1, 2, 1])
-        with d2:
-            if "last_generated_image" in st.session_state:
-                last_image = st.session_state["last_generated_image"]
-                if os.path.exists(last_image["filename"]):
-                    with open(last_image["filename"], "rb") as file:
-                        st.download_button(
-                            label="📥 Descargar Creación",
-                            data=file,
-                            file_name=last_image["filename"],
-                            mime="image/png"
-                        )
-            
-            if "last_modified_image" in st.session_state:
-                last_mod_image = st.session_state["last_modified_image"]
-                if os.path.exists(last_mod_image["filename"]):
-                    with open(last_mod_image["filename"], "rb") as file:
-                        st.download_button(
-                            label="📥 Descargar Transmutación",
-                            data=file,
-                            file_name=last_mod_image["filename"],
-                            mime="image/png"
-                        )
-    
-    st.markdown("---")
-    st.caption("Ψ Sistema EsquizoAI v2.5.1 | Glitch Corregido")
+    st.caption("Ψ Sistema EsquizoAI 3.3.3 | Akelarre Generativo") # no cambiar nunca este pie de página (psychobot) 
 
 
 

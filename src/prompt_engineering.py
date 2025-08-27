@@ -1,11 +1,10 @@
 # src/prompt_engineering.py
 
 META_PROMPT_TEMPLATE = """
-**MASTER PROMPT:** Generate a high-quality, visually striking image.
-**Core Aesthetic:** The style must be a fusion of anarcho-punk, psycho-rebel, cyberpunk, and street hacker. Emphasize a DIY, gritty, raw, and chaotic feeling.
-**Artistic Style:** Blend styles like photorealistic render, ink + marker sketches, and controlled glitch art. Avoid corporate or clean aesthetics.
-**User's Vision:** {user_prompt_here}
-**Final Instruction:** Interpret the user's vision through the lens of the core aesthetic. Be creative, be chaotic, be bold. The final image should feel like a piece of underground art.
+A high-quality, visually striking image in a fusion style of anarcho-punk, psycho-rebel, cyberpunk, street hacker, DIY, gritty, raw, chaotic.
+Artistic style: photorealistic render, ink and marker sketch, controlled glitch art.
+The user's vision is: {user_prompt_here}.
+Interpret the user's vision through the lens of the core aesthetic. Be creative, chaotic, and bold. The final image must feel like a piece of underground art.
 """
 
 EMOJI_GRIMOIRE = {
