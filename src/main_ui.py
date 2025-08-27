@@ -124,28 +124,139 @@ def handle_image_modification(client, user_prompt, user_uuid, original_image):
             "image": mod_image
         }
 
+def update_prompt_from_emoji(emoji, key):
+    """Callback para añadir un emoji al estado del text_area."""
+    if key not in st.session_state:
+        st.session_state[key] = ""
+    st.session_state[key] += emoji
+
 def draw_emoji_interface(text_area_key: str):
     """Dibuja la interfaz de botones de emojis en dos filas."""
     st.markdown("<h3 style='text-align: center;'>🔮 Invoca con Símbolos:</h3>", unsafe_allow_html=True)
     
-    # Inicializar el estado del text_area si no existe
-    if text_area_key not in st.session_state:
-        st.session_state[text_area_key] = ""
-
     emoji_list = list(EMOJI_GRIMOIRE.keys())
     half_point = len(emoji_list) // 2
     
     # Primera fila
     cols_1 = st.columns(half_point)
     for i, emoji in enumerate(emoji_list[:half_point]):
-        if cols_1[i].button(emoji, key=f"{text_area_key}_{emoji}"):
-            st.session_state[text_area_key] += emoji
+        cols_1[i].button(
+            emoji, 
+            key=f"{text_area_key}_{emoji}", 
+            on_click=update_prompt_from_emoji, 
+            args=(emoji, text_area_key)
+        )
             
     # Segunda fila
     cols_2 = st.columns(len(emoji_list) - half_point)
     for i, emoji in enumerate(emoji_list[half_point:]):
-        if cols_2[i].button(emoji, key=f"{text_area_key}_{emoji}_2"):
-            st.session_state[text_area_key] += emoji
+        cols_2[i].button(
+            emoji, 
+            key=f"{text_area_key}_{emoji}_2", 
+            on_click=update_prompt_from_emoji, 
+            args=(emoji, text_area_key)
+        )
+
+def run_app():
+    """Función principal que ejecuta la aplicación Streamlit."""
+    setup_page()
+    db = initialize_firebase()
+    client = initialize_genai_client()
+
+    if not st.session_state.get("logged_in", False):
+        # --- VISTA DE LOGIN ---
+        show_welcome_message()
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            show_login_form(db)
+
+    else:
+        # --- VISTA PRINCIPAL DE LA APP ---
+        with st.sidebar:
+            st.header("💊 Control Neural")
+            st.markdown("---")
+            show_user_info()
+
+        user_uuid = st.session_state.get("user_uuid")
+        
+        tab1, tab2 = st.tabs(["🎨 Generar", "🔄 Transmutar"])
+
+        with tab1:
+            # Definir la key para el text_area de esta pestaña
+            gen_key = "prompt_input_area_gen"
+            draw_emoji_interface(gen_key)
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                with st.form("image_generation_form"):
+                    prompt_input = st.text_area("💡 ...o describe tu visión:", key=gen_key)
+                    submit_gen = st.form_submit_button("🔥 Generar")
+                
+                if submit_gen:
+                    handle_image_generation(client, prompt_input, user_uuid)
+                    st.session_state[gen_key] = "" # Limpiar
+
+        with tab2:
+            # Definir la key para el text_area de esta pestaña
+            mod_key = "prompt_input_area_mod"
+
+            st.markdown("<h3 style='text-align: center;'>🌟 Sube una imagen para alterarla</h3>", unsafe_allow_html=True)
+            c1, c2, c3 = st.columns([1, 2, 1])
+            with c2:
+                uploaded_file = st.file_uploader("Sube una imagen", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
+            
+            original_image = None
+            if uploaded_file is not None:
+                original_image = Image.open(uploaded_file)
+                display_image_with_expander(image=original_image, caption="Imagen a transmutar")
+            elif "last_generated_image" in st.session_state:
+                original_image = st.session_state["last_generated_image"]["image"]
+                st.markdown("<p style='text-align: center;'>Usando la última imagen generada.</p>", unsafe_allow_html=True)
+                display_image_with_expander(image=original_image, caption="Última imagen generada")
+
+            draw_emoji_interface(mod_key)
+
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                with st.form("image_modification_form"):
+                    mod_prompt = st.text_area("💡 ...o describe la mutación:", key=mod_key)
+                    submit_mod = st.form_submit_button("🔥 Modificar")
+                
+                if submit_mod:
+                    if original_image:
+                        handle_image_modification(client, mod_prompt, user_uuid, original_image)
+                        st.session_state[mod_key] = "" # Limpiar
+                    else:
+                        st.error("💀 No hay imagen disponible. Sube una o genera una nueva.")
+
+        # Lógica de descarga
+        d1, d2, d3 = st.columns([1, 2, 1])
+        with d2:
+            if "last_generated_image" in st.session_state:
+                last_image = st.session_state["last_generated_image"]
+                if os.path.exists(last_image["filename"]):
+                    with open(last_image["filename"], "rb") as file:
+                        st.download_button(
+                            label="📥 Descargar Creación",
+                            data=file,
+                            file_name=last_image["filename"],
+                            mime="image/png"
+                        )
+            
+            if "last_modified_image" in st.session_state:
+                last_mod_image = st.session_state["last_modified_image"]
+                if os.path.exists(last_mod_image["filename"]):
+                    with open(last_mod_image["filename"], "rb") as file:
+                        st.download_button(
+                            label="📥 Descargar Transmutación",
+                            data=file,
+                            file_name=last_mod_image["filename"],
+                            mime="image/png"
+                        )
+    
+    st.markdown("---")
+    st.caption("Ψ Sistema EsquizoAI v2.5.2 | Callback Fix")
 
 def run_app():
     """Función principal que ejecuta la aplicación Streamlit."""
