@@ -60,10 +60,10 @@ def show_welcome_message():
     st.markdown("""
     <div style="text-align: center;">
         <h2>🌌 GUÍA DE INICIACIÓN 🌌</h2>
-        <p>1. Ingresa tu <b>Nombre de Poder</b> abajo (máx 8 caracteres).</p>
-        <p>2. Una vez dentro, usa los <b>símbolos</b> o escribe para generar una imagen.</p>
-        <p>3. <b>Transmuta</b> la imagen generada o sube una propia para alterarla.</p>
-        <p>4. Descarga tus creaciones y compártelas en el caos.</p>
+        <p>1. Ingresa tu <b>Nombre de Poder</b> abajo para entrar al Akelarre.</p>
+        <p>2. Una vez dentro, <b>invoca tu visión</b> en el campo de texto.</p>
+        <p>3. Puedes usar <b>texto, emojis de tu teclado 💀🔥🤖, o una mezcla de ambos</b>.</p>
+        <p>4. <b>Transmuta</b> la imagen generada o sube una propia para alterarla.</p>
         <br>
         <p>Este portal se alimenta de la energía del caos y de los créditos personales del desarrollador. Si quieres mantener la llama encendida, considera ofrendar una donación.</p>
         <p><a href="https://www.paypal.com/paypalme/rdvibe?country.x=PE&locale.x=es_XC" target="_blank" style="color: #00ff00; text-decoration: underline;"><b>>> Donar para mantener vivo el Akelarre <<</b></a></p>
