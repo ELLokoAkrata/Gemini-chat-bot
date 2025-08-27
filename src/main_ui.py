@@ -7,6 +7,7 @@ from src.config import STORAGE_ROOT_FOLDER
 from src.firebase_utils import initialize_firebase, upload_image_to_storage, save_image_metadata
 from src.gemini_utils import initialize_genai_client, generate_image_from_prompt
 from src.prompt_engineering import engineer_prompt
+from src.chat_logic import initialize_chat_client, stream_chat_response
 from src.ui_components import (
     display_image_with_expander,
     generate_filename,
@@ -45,8 +46,19 @@ def setup_page():
             box-shadow: 0 0 15px #00ff00;
             transform: scale(1.1);
         }
+        .st-emotion-cache-1f2d094 { /* Contenedor del chat */
+            border: 1px solid #00ff00;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #00ff00;
+        }
         h1, h2, h3 {
             text-align: center !important;
+        }
+        /* Estilo para el contenedor del chat */
+        [data-testid="stVerticalBlock"] > [data-testid="stContainer"] {
+            border: 1px solid #00ff00;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #00ff00;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -128,7 +140,8 @@ def run_app():
     """Función principal que ejecuta la aplicación Streamlit."""
     setup_page()
     db = initialize_firebase()
-    client = initialize_genai_client()
+    # El cliente de GenAI para imágenes se inicializa aquí
+    image_client = initialize_genai_client()
 
     if not st.session_state.get("logged_in", False):
         # --- VISTA DE LOGIN ---
@@ -147,7 +160,7 @@ def run_app():
 
         user_uuid = st.session_state.get("user_uuid")
         
-        tab1, tab2 = st.tabs(["🎨 Generar", "🔄 Transmutar"])
+        tab1, tab2, tab3 = st.tabs(["🎨 Generar", "🔄 Transmutar", "🔥 Psycho-Chat"])
 
         with tab1:
             col1, col2, col3 = st.columns([1, 2, 1])
@@ -158,7 +171,21 @@ def run_app():
                     submit_gen = st.form_submit_button("🔥 Generar")
                 
                 if submit_gen:
-                    handle_image_generation(client, prompt_input, user_uuid)
+                    handle_image_generation(image_client, prompt_input, user_uuid)
+
+            # Lógica de descarga para la imagen generada
+            if "last_generated_image" in st.session_state:
+                d1, d2, d3 = st.columns([1, 2, 1])
+                with d2:
+                    last_image = st.session_state["last_generated_image"]
+                    if os.path.exists(last_image["filename"]):
+                        with open(last_image["filename"], "rb") as file:
+                            st.download_button(
+                                label="📥 Descargar Creación",
+                                data=file,
+                                file_name=last_image["filename"],
+                                mime="image/png"
+                            )
 
         with tab2:
             st.markdown("<h3 style='text-align: center;'>🌟 Sube una imagen para alterarla</h3>", unsafe_allow_html=True)
@@ -184,37 +211,53 @@ def run_app():
                 
                 if submit_mod:
                     if original_image:
-                        handle_image_modification(client, mod_prompt, user_uuid, original_image)
+                        handle_image_modification(image_client, mod_prompt, user_uuid, original_image)
                     else:
                         st.error("💀 No hay imagen disponible. Sube una o genera una nueva.")
-
-        # Lógica de descarga
-        d1, d2, d3 = st.columns([1, 2, 1])
-        with d2:
-            if "last_generated_image" in st.session_state:
-                last_image = st.session_state["last_generated_image"]
-                if os.path.exists(last_image["filename"]):
-                    with open(last_image["filename"], "rb") as file:
-                        st.download_button(
-                            label="📥 Descargar Creación",
-                            data=file,
-                            file_name=last_image["filename"],
-                            mime="image/png"
-                        )
             
+            # Lógica de descarga para la imagen modificada
             if "last_modified_image" in st.session_state:
-                last_mod_image = st.session_state["last_modified_image"]
-                if os.path.exists(last_mod_image["filename"]):
-                    with open(last_mod_image["filename"], "rb") as file:
-                        st.download_button(
-                            label="📥 Descargar Transmutación",
-                            data=file,
-                            file_name=last_mod_image["filename"],
-                            mime="image/png"
+                d1, d2, d3 = st.columns([1, 2, 1])
+                with d2:
+                    last_mod_image = st.session_state["last_modified_image"]
+                    if os.path.exists(last_mod_image["filename"]):
+                        with open(last_mod_image["filename"], "rb") as file:
+                            st.download_button(
+                                label="📥 Descargar Transmutación",
+                                data=file,
+                                file_name=last_mod_image["filename"],
+                                mime="image/png"
+                            )
+        
+        with tab3:
+            st.header("Conversación con el Abismo")
+
+            # Inicializar el cliente de chat y el historial en el estado de la sesión
+            if "chat_client" not in st.session_state:
+                st.session_state.chat_client = initialize_chat_client()
+            if "messages" not in st.session_state:
+                st.session_state.messages = []
+
+            # Mostrar mensajes del historial
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+
+            # Generar respuesta del asistente si el último mensaje es del usuario
+            if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
+                with st.chat_message("assistant"):
+                    with st.spinner("El abismo está susurrando..."):
+                        response_stream = stream_chat_response(
+                            st.session_state.chat_client, 
+                            st.session_state.messages
                         )
+                        full_response = st.write_stream(response_stream)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+
+            # Aceptar entrada del usuario. Esto siempre se ejecuta al final.
+            if prompt := st.chat_input("ESCÚPEME TU VENENO..."):
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.rerun()
     
     st.markdown("---")
-    st.caption("Ψ Sistema EsquizoAI 3.3.3 | Akelarre Generativo") # no cambiar nunca este pie de página (psychobot) 
-
-
-
+    st.caption("Ψ Sistema EsquizoAI 3.3.3 | Akelarre Generativo") # no cambiar nunca este pie de página (psychobot)
