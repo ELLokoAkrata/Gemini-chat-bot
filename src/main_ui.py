@@ -124,24 +124,28 @@ def handle_image_modification(client, user_prompt, user_uuid, original_image):
             "image": mod_image
         }
 
-def draw_emoji_interface(tab_key: str):
+def draw_emoji_interface(text_area_key: str):
     """Dibuja la interfaz de botones de emojis en dos filas."""
     st.markdown("<h3 style='text-align: center;'>🔮 Invoca con Símbolos:</h3>", unsafe_allow_html=True)
     
+    # Inicializar el estado del text_area si no existe
+    if text_area_key not in st.session_state:
+        st.session_state[text_area_key] = ""
+
     emoji_list = list(EMOJI_GRIMOIRE.keys())
     half_point = len(emoji_list) // 2
     
     # Primera fila
     cols_1 = st.columns(half_point)
     for i, emoji in enumerate(emoji_list[:half_point]):
-        if cols_1[i].button(emoji, key=f"{tab_key}_{emoji}"):
-            st.session_state["prompt_input"] += emoji
+        if cols_1[i].button(emoji, key=f"{text_area_key}_{emoji}"):
+            st.session_state[text_area_key] += emoji
             
     # Segunda fila
     cols_2 = st.columns(len(emoji_list) - half_point)
     for i, emoji in enumerate(emoji_list[half_point:]):
-        if cols_2[i].button(emoji, key=f"{tab_key}_{emoji}_2"):
-            st.session_state["prompt_input"] += emoji
+        if cols_2[i].button(emoji, key=f"{text_area_key}_{emoji}_2"):
+            st.session_state[text_area_key] += emoji
 
 def run_app():
     """Función principal que ejecuta la aplicación Streamlit."""
@@ -167,24 +171,20 @@ def run_app():
         user_uuid = st.session_state.get("user_uuid")
         
         tab1, tab2 = st.tabs(["🎨 Generar", "🔄 Transmutar"])
-        
-        if "prompt_input" not in st.session_state:
-            st.session_state["prompt_input"] = ""
 
         with tab1:
-            draw_emoji_interface("gen")
+            draw_emoji_interface("prompt_input_area_gen")
             
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 with st.form("image_generation_form"):
                     prompt_input = st.text_area("💡 ...o describe tu visión:", 
-                                              value=st.session_state.get("prompt_input", ""),
                                               key="prompt_input_area_gen")
                     submit_gen = st.form_submit_button("🔥 Generar")
                 
                 if submit_gen:
                     handle_image_generation(client, prompt_input, user_uuid)
-                    st.session_state["prompt_input"] = ""
+                    st.session_state.prompt_input_area_gen = "" # Limpiar
 
         with tab2:
             st.markdown("<h3 style='text-align: center;'>🌟 Sube una imagen para alterarla</h3>", unsafe_allow_html=True)
@@ -201,20 +201,19 @@ def run_app():
                 st.markdown("<p style='text-align: center;'>Usando la última imagen generada.</p>", unsafe_allow_html=True)
                 display_image_with_expander(image=original_image, caption="Última imagen generada")
 
-            draw_emoji_interface("mod")
+            draw_emoji_interface("prompt_input_area_mod")
 
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 with st.form("image_modification_form"):
                     mod_prompt = st.text_area("💡 ...o describe la mutación:", 
-                                            value=st.session_state.get("prompt_input", ""),
                                             key="prompt_input_area_mod")
                     submit_mod = st.form_submit_button("🔥 Modificar")
                 
                 if submit_mod:
                     if original_image:
                         handle_image_modification(client, mod_prompt, user_uuid, original_image)
-                        st.session_state["prompt_input"] = ""
+                        st.session_state.prompt_input_area_mod = "" # Limpiar
                     else:
                         st.error("💀 No hay imagen disponible. Sube una o genera una nueva.")
 
@@ -244,7 +243,7 @@ def run_app():
                         )
     
     st.markdown("---")
-    st.caption("Ψ Sistema EsquizoAI v2.5.0 | Akelarre Generativo")
+    st.caption("Ψ Sistema EsquizoAI v2.5.1 | Glitch Corregido")
 
 
 
