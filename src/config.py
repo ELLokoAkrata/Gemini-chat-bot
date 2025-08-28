@@ -53,3 +53,19 @@ EXAMPLE_MOD_PROMPTS = [
     "Add psychedelic patterns and colors",
     "Make it more dystopian and dark"
 ]
+
+# --- Rate Limiting Configuration ---
+MAX_IMAGES_PER_DAY = 100  # Límite global diario
+USER_COOLDOWN_SECONDS = 15 # Tiempo de espera para un usuario entre peticiones
+
+# --- Logging Configuration ---
+import logging
+import sys
+
+def setup_logging():
+    """Configura el logging básico para la aplicación."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        stream=sys.stdout
+    )

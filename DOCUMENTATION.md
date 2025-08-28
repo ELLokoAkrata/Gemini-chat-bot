@@ -44,14 +44,38 @@ Una vez dentro, la interfaz se divide en tres pestañas:
 -   **`src/ui_components.py`:** Contiene funciones reutilizables para la UI.
 -   **`src/main_ui.py`:** Orquestador principal que construye la interfaz.
 
-### 5. Arquitectura de Datos (Firebase)
+### 5. Depuración y Monitoreo
 
--   **Firestore:** Los datos de imágenes se guardan en `usuarios/{user_uuid}/user_images/{image_id}`.
+Para facilitar la depuración y observar el comportamiento de la aplicación en tiempo real, se ha implementado un sistema de logging centralizado utilizando el módulo `logging` de Python.
+
+-   **Configuración:** La configuración del logger se define en la función `setup_logging()` dentro de `src/config.py`. Establece el nivel de log en `INFO` y formatea los mensajes para incluir timestamp, nivel y nombre del logger, imprimiendo todo en la salida estándar (terminal).
+-   **Inicialización:** El logging se activa al inicio de la aplicación mediante una llamada a `setup_logging()` en `chat_bot.py`.
+-   **Puntos de Log Clave:**
+    -   En `src/gemini_utils.py`, se registran logs `INFO`, `WARNING` y `ERROR` para monitorear las interacciones con la API de Google.
+    -   En `src/main_ui.py`, se registran logs de `WARNING` cada vez que un usuario es bloqueado por el cooldown o por el límite diario global, permitiendo monitorear la frecuencia de estas restricciones.
+
+### 6. Control de Costos y Límites de Uso (Rate Limiting)
+
+Para garantizar la sostenibilidad del proyecto y prevenir abusos, se han implementado dos mecanismos de control de uso:
+
+-   **Límite Diario Global:** La aplicación permite un número máximo de generaciones de imágenes por día para todos los usuarios combinados.
+    -   **Implementación:** Se utiliza una colección `daily_limits` en Firestore para llevar un conteo atómico de las imágenes generadas cada día (identificado por `YYYY-MM-DD`).
+    -   **Configuración:** El límite se define en `src/config.py` con la constante `MAX_IMAGES_PER_DAY`.
+
+-   **Enfriamiento (Cooldown) por Usuario:** Se ha establecido un período de espera obligatorio para cada usuario entre solicitudes de generación o modificación de imágenes.
+    -   **Implementación:** Se utiliza `st.session_state` para almacenar la marca de tiempo de la última solicitud del usuario, validando el tiempo transcurrido en cada nueva petición.
+    -   **Configuración:** El tiempo de espera se define en `src/config.py` con la constante `USER_COOLDOWN_SECONDS`.
+
+### 7. Arquitectura de Datos (Firebase)
+
+-   **Firestore:**
+    -   `usuarios/{user_uuid}/user_images/{image_id}`: Guarda los metadatos de cada imagen.
+    -   `daily_limits/{YYYY-MM-DD}`: Documento que actúa como contador para el límite diario global.
 -   **Storage:** Las imágenes se almacenan en `psycho_generator_images/{user_uuid}/{filename}.png`.
 
 ---
 
-### 6. Roadmap
+### 8. Roadmap
 
 -   [x] **Ingeniería de Prompts y Personalidad del Modelo:** Completado.
 -   [x] **Añadir Pestaña de Chatbot:** Completado.
@@ -63,6 +87,6 @@ Una vez dentro, la interfaz se divide en tres pestañas:
 
 ---
 
-### 7. Panel de Administración (Observatorio Secreto)
+### 9. Panel de Administración (Observatorio Secreto)
 
-El proyecto incluye un panel de administración local (`admin_dashboard.py`) para monitorear la actividad de la aplicación. Está excluido del repositorio y protegido por contraseña. Para más detalles, ver la sección correspondiente en la documentación anterior.
+El proyecto incluye un panel de administración local (`admin_dashboard.py`) que ha sido optimizado para reducir costos de lectura en Firebase. Ahora muestra métricas globales (total de usuarios e imágenes) y una lista de usuarios registrados. Está excluido del repositorio y protegido por contraseña.

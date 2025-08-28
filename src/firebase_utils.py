@@ -3,8 +3,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore, storage
 from google.cloud.firestore_v1.base_query import FieldFilter
 import uuid
-from datetime import timedelta
-from src.config import STORAGE_ROOT_FOLDER
+from datetime import timedelta, datetime, timezone
+from src.config import STORAGE_ROOT_FOLDER, MAX_IMAGES_PER_DAY
 
 def initialize_firebase():
     """
@@ -29,6 +29,42 @@ def initialize_firebase():
             "storageBucket": firebase_secrets.get("storageBucket")
         })
     return firestore.client()
+
+def check_daily_limit(db):
+    """
+    Verifica si se ha alcanzado el límite diario de generación de imágenes.
+    Retorna True si el límite fue alcanzado, False en caso contrario.
+    """
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    limit_ref = db.collection("daily_limits").document(today_str)
+    limit_doc = limit_ref.get()
+
+    if limit_doc.exists:
+        count = limit_doc.to_dict().get("image_count", 0)
+        if count >= MAX_IMAGES_PER_DAY:
+            return True  # Límite alcanzado
+    return False # Límite no alcanzado
+
+def increment_daily_count(db):
+    """
+    Incrementa el contador de imágenes para el día actual.
+    Usa una transacción para seguridad en concurrencia.
+    """
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    limit_ref = db.collection("daily_limits").document(today_str)
+    
+    # Usamos una transacción para asegurar que el incremento sea atómico
+    @firestore.transactional
+    def update_in_transaction(transaction, doc_ref):
+        snapshot = doc_ref.get(transaction=transaction)
+        if snapshot.exists:
+            new_count = snapshot.to_dict().get("image_count", 0) + 1
+            transaction.update(doc_ref, {"image_count": new_count})
+        else:
+            transaction.set(doc_ref, {"image_count": 1})
+    
+    transaction = db.transaction()
+    update_in_transaction(transaction, limit_ref)
 
 def upload_image_to_storage(local_path: str, remote_path: str):
     """
@@ -70,41 +106,31 @@ def get_all_users(db):
     users_ref = db.collection("usuarios")
     return [doc.to_dict() for doc in users_ref.stream()]
 
-def get_project_summary_data(db):
+def get_total_image_count(db):
     """
-    Realiza una consulta de grupo para obtener un resumen de la actividad
+    Realiza una consulta de agregación para obtener el número total de imágenes
     del proyecto 'psycho_generator_images'.
-    Devuelve un diccionario con el recuento de imágenes por usuario.
+    Esta operación es muy eficiente en costes (1 lectura).
+    Retorna un número entero.
     """
-    # Primero, obtenemos un mapa de UUID a nombre para enriquecer los resultados
-    all_users = get_all_users(db)
-    uuid_to_name_map = {user['user_uuid']: user['nombre'] for user in all_users}
-
-    summary_data = {}
-    
-    # Hacemos una consulta de grupo en todas las colecciones 'user_images'
     images_group_ref = db.collection_group('user_images')
     
     start_at = f"{STORAGE_ROOT_FOLDER}/"
     end_at = start_at + "\uf8ff"
 
-    # Nota: Esta consulta requiere su propio índice compuesto en Firestore.
-    # La consola de Firebase te dará el enlace para crearlo si falla.
     query = images_group_ref.where(filter=FieldFilter("storage_path", ">=", start_at)) \
                             .where(filter=FieldFilter("storage_path", "<", end_at))
+    
+    # Realizamos la consulta de agregación para contar los documentos
+    aggregate_query = query.count()
+    result = aggregate_query.get()
+    
+    # El resultado es una lista de alias, en este caso solo uno.
+    if result and result[0]:
+        return result[0].value
+    return 0
 
-    for doc in query.stream():
-        # Extraemos el UUID del usuario del path del documento
-        user_uuid = doc.reference.parent.parent.id
-        
-        if user_uuid not in summary_data:
-            summary_data[user_uuid] = {
-                "user_name": uuid_to_name_map.get(user_uuid, "Usuario Desconocido"),
-                "image_count": 0
-            }
-        summary_data[user_uuid]["image_count"] += 1
-        
-    return summary_data
+
 
 def get_image_public_url(storage_path: str):
     """Genera una URL pública y firmada para un archivo en Firebase Storage."""

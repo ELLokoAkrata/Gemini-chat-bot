@@ -3,6 +3,7 @@ from google import genai
 from PIL import Image
 import io
 import traceback
+import logging
 
 from src.config import MODEL_ID, SAFETY_CONFIG
 
@@ -31,11 +32,13 @@ def generate_image_from_prompt(client, prompt: str, original_image: Image.Image 
     try:
         contents = [prompt, original_image] if original_image else [prompt]
         
+        logging.info(f"Enviando petición a la API de Gemini con prompt: '{prompt[:80]}...'")
         response = client.models.generate_content(
             model=MODEL_ID,
             contents=contents,
             config=SAFETY_CONFIG
         )
+        logging.info("Respuesta recibida exitosamente de la API de Gemini.")
         
         placeholder.empty()
 
@@ -48,6 +51,7 @@ def generate_image_from_prompt(client, prompt: str, original_image: Image.Image 
                 """, 
                 unsafe_allow_html=True
             )
+            logging.warning("La respuesta de la API estaba vacía o no contenía candidatos.")
             return None
             
         if not response.candidates[0].content or not response.candidates[0].content.parts:
@@ -59,15 +63,18 @@ def generate_image_from_prompt(client, prompt: str, original_image: Image.Image 
                 """, 
                 unsafe_allow_html=True
             )
+            logging.warning("La respuesta de la API no contenía 'parts' con datos de imagen.")
             return None
             
         for part in response.candidates[0].content.parts:
             if hasattr(part, 'inline_data') and part.inline_data:
                 image_data = part.inline_data.data
+                logging.info("Imagen extraída correctamente de la respuesta.")
                 return Image.open(io.BytesIO(image_data))
 
     except Exception as e:
         placeholder.empty()
+        logging.error(f"Error durante la llamada a la API de Gemini: {e}", exc_info=True)
         st.markdown(
             f"""
             <div style="max-width: 450px; word-wrap: break-word; white-space: normal; margin: 0 auto; text-align: center; background-color: rgba(180, 0, 0, 0.2); padding: 10px; border-radius: 5px;">

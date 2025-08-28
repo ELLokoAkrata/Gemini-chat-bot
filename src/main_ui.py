@@ -1,10 +1,17 @@
 import streamlit as st
 from PIL import Image
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+import logging
 
-from src.config import STORAGE_ROOT_FOLDER
-from src.firebase_utils import initialize_firebase, upload_image_to_storage, save_image_metadata
+from src.config import STORAGE_ROOT_FOLDER, USER_COOLDOWN_SECONDS
+from src.firebase_utils import (
+    initialize_firebase, 
+    upload_image_to_storage, 
+    save_image_metadata,
+    check_daily_limit,
+    increment_daily_count
+)
 from src.gemini_utils import initialize_genai_client, generate_image_from_prompt
 from src.prompt_engineering import engineer_prompt
 from src.chat_logic import initialize_chat_client, stream_chat_response
@@ -73,17 +80,41 @@ def setup_page():
 
 def handle_image_generation(client, user_prompt, user_uuid):
     """Gestiona la lógica de generación y guardado de una nueva imagen."""
+    db = initialize_firebase()
+
+    # --- 1. Verificación de Cooldown del Usuario ---
+    now = datetime.now()
+    if "last_request_time" in st.session_state:
+        time_since_last_request = now - st.session_state["last_request_time"]
+        if time_since_last_request < timedelta(seconds=USER_COOLDOWN_SECONDS):
+            remaining_time = USER_COOLDOWN_SECONDS - time_since_last_request.total_seconds()
+            st.error(f"⏳ Energía del caos baja. Espera {remaining_time:.0f} segundos antes de generar otra imagen.")
+            logging.warning(f"Usuario {user_uuid} limitado por cooldown. Tiempo restante: {remaining_time:.0f}s")
+            return
+
+    # --- 2. Verificación del Límite Diario Global ---
+    if check_daily_limit(db):
+        st.error("🚫 El Akelarre ha alcanzado su límite de energía por hoy. Vuelve mañana para seguir creando.")
+        logging.warning(f"Generación bloqueada para {user_uuid}. Límite diario global alcanzado.")
+        return
+
+    # Si las validaciones pasan, actualizamos el tiempo de la última petición
+    st.session_state["last_request_time"] = now
+
+    # --- Proceso de Generación ---
     final_prompt = engineer_prompt(user_prompt)
     generated_image = generate_image_from_prompt(client, final_prompt)
     
     if generated_image:
+        # --- 3. Incrementar el contador solo si la imagen se generó con éxito ---
+        increment_daily_count(db)
+
         output_filename = generate_filename(is_modified=False)
         generated_image.save(output_filename)
         
         st.markdown("<h3 style='text-align: center;'>🖼️ Creación Manifestada</h3>", unsafe_allow_html=True)
         display_image_with_expander(image=generated_image, caption=f"Input: {user_prompt}")
         
-        db = initialize_firebase()
         remote_path = f"{STORAGE_ROOT_FOLDER}/{user_uuid}/{output_filename}"
         
         metadata = {
@@ -106,17 +137,41 @@ def handle_image_generation(client, user_prompt, user_uuid):
 
 def handle_image_modification(client, user_prompt, user_uuid, original_image):
     """Gestiona la lógica de modificación y guardado de una imagen."""
+    db = initialize_firebase()
+
+    # --- 1. Verificación de Cooldown del Usuario ---
+    now = datetime.now()
+    if "last_request_time" in st.session_state:
+        time_since_last_request = now - st.session_state["last_request_time"]
+        if time_since_last_request < timedelta(seconds=USER_COOLDOWN_SECONDS):
+            remaining_time = USER_COOLDOWN_SECONDS - time_since_last_request.total_seconds()
+            st.error(f"⏳ Energía del caos baja. Espera {remaining_time:.0f} segundos antes de transmutar de nuevo.")
+            logging.warning(f"Usuario {user_uuid} limitado por cooldown. Tiempo restante: {remaining_time:.0f}s")
+            return
+
+    # --- 2. Verificación del Límite Diario Global ---
+    if check_daily_limit(db):
+        st.error("🚫 El Akelarre ha alcanzado su límite de energía por hoy. Vuelve mañana para seguir creando.")
+        logging.warning(f"Generación bloqueada para {user_uuid}. Límite diario global alcanzado.")
+        return
+        
+    # Si las validaciones pasan, actualizamos el tiempo de la última petición
+    st.session_state["last_request_time"] = now
+
+    # --- Proceso de Modificación ---
     final_prompt = engineer_prompt(user_prompt)
     mod_image = generate_image_from_prompt(client, final_prompt, original_image)
 
     if mod_image:
+        # --- 3. Incrementar el contador solo si la imagen se generó con éxito ---
+        increment_daily_count(db)
+
         output_filename = generate_filename(is_modified=True)
         mod_image.save(output_filename)
         
         st.markdown("<h3 style='text-align: center;'>🖼️ Transmutación Realizada</h3>", unsafe_allow_html=True)
         display_image_with_expander(image=mod_image, caption=f"Input: {user_prompt}")
         
-        db = initialize_firebase()
         remote_path = f"{STORAGE_ROOT_FOLDER}/{user_uuid}/{output_filename}"
 
         metadata = {

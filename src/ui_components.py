@@ -20,7 +20,7 @@ def display_image_with_expander(image, caption):
         st.image(
             image=image,
             caption=caption,
-            width='stretch',
+            use_container_width=True,
             output_format="PNG"
         )
         st.caption("🔍 Haz clic en el cuadrito de full screen para ver la imagen en tamaño original")
