@@ -101,10 +101,35 @@ def get_or_create_user(db, user_name: str):
 
 # --- Funciones para el Dashboard de Administración ---
 
-def get_all_users(db):
-    """Recupera todos los usuarios de la colección 'usuarios'."""
-    users_ref = db.collection("usuarios")
-    return [doc.to_dict() for doc in users_ref.stream()]
+def get_project_specific_users(db):
+    """
+    Recupera solo los usuarios que han generado imágenes para el proyecto
+    'psycho_generator_images'.
+    """
+    images_group_ref = db.collection_group('user_images')
+    
+    start_at = f"{STORAGE_ROOT_FOLDER}/"
+    end_at = start_at + "\uf8ff"
+
+    query = images_group_ref.where(filter=FieldFilter("storage_path", ">=", start_at)) \
+                            .where(filter=FieldFilter("storage_path", "<", end_at))
+    
+    user_uuids = set()
+    for doc in query.stream():
+        # Extraemos el UUID del usuario del path del documento
+        user_uuid = doc.reference.parent.parent.id
+        user_uuids.add(user_uuid)
+        
+    # Ahora, obtenemos los datos de los usuarios únicos que encontramos
+    users_data = []
+    for uuid in user_uuids:
+        user_ref = db.collection("usuarios").document(uuid)
+        user_doc = user_ref.get()
+        if user_doc.exists:
+            users_data.append(user_doc.to_dict())
+            
+    return users_data
+
 
 def get_total_image_count(db):
     """
@@ -125,9 +150,9 @@ def get_total_image_count(db):
     aggregate_query = query.count()
     result = aggregate_query.get()
     
-    # El resultado es una lista de alias, en este caso solo uno.
-    if result and result[0]:
-        return result[0].value
+    # El resultado es una lista que contiene otra lista con el resultado.
+    if result and result[0] and hasattr(result[0][0], 'value'):
+        return result[0][0].value
     return 0
 
 

@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from src.firebase_utils import initialize_firebase, get_all_users, get_total_image_count
+from src.firebase_utils import initialize_firebase, get_project_specific_users, get_total_image_count
 import altair as alt
 
 # --- Configuración de la página ---
@@ -13,12 +13,13 @@ def check_password():
         st.session_state.password_correct = False
 
     # Cargar la contraseña desde los secretos de Streamlit
-    correct_password = st.secrets["admin_password"]
+    correct_password = str(st.secrets["admin"]["password"])
 
     if not st.session_state.password_correct:
         password = st.text_input("Ingresa la clave del Observatorio", type="password")
         if st.button("Acceder"):
-            if password == correct_password:
+            # Usamos .strip() para eliminar espacios en blanco accidentales
+            if password.strip() == correct_password.strip():
                 st.session_state.password_correct = True
                 st.rerun()
             else:
@@ -31,21 +32,34 @@ if not check_password():
 # --- Inicialización de Firebase ---
 db = initialize_firebase()
 
-# --- Título del Dashboard ---
+# --- Funciones cacheadas para obtener datos ---
+# El argumento _db_client se ignora en el hash de la caché, solucionando el UnhashableParamError.
+@st.cache_data
+def get_cached_users(_db_client):
+    return get_project_specific_users(_db_client)
+
+@st.cache_data
+def get_cached_total_images(_db_client):
+    return get_total_image_count(_db_client)
+
+# --- Título y Botón de Actualización ---
 st.title("🔮 Observatorio Secreto del Akelarre 🔮")
+if st.button("🔄 Actualizar Datos"):
+    st.cache_data.clear()
+    st.rerun()
 st.markdown("---")
 
 # --- Métricas Principales ---
 col1, col2 = st.columns(2)
 
 # Métrica 1: Número total de usuarios
-all_users = get_all_users(db)
+all_users = get_cached_users(db)
 total_users = len(all_users)
 with col1:
     st.metric(label="Nº Total de Viajeros (Usuarios)", value=total_users)
 
 # Métrica 2: Conteo total de imágenes (eficiente)
-total_images = get_total_image_count(db)
+total_images = get_cached_total_images(db)
 with col2:
     st.metric(label="Imágenes Totales Generadas", value=total_images)
 
