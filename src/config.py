@@ -55,7 +55,7 @@ EXAMPLE_MOD_PROMPTS = [
 ]
 
 # --- Rate Limiting Configuration ---
-MAX_IMAGES_PER_DAY = 100  # Límite global diario
+MAX_IMAGES_PER_DAY = 200 # Límite global diario
 USER_COOLDOWN_SECONDS = 15 # Tiempo de espera para un usuario entre peticiones
 
 # --- Logging Configuration ---
