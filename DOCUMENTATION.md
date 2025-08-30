@@ -13,7 +13,13 @@ Los usuarios pueden:
 
 Toda la infraestructura de backend se gestiona a través de **Google Firebase**.
 
-### 2. Arquitectura y Tecnologías
+### 2. Configuración del Entorno de Desarrollo
+
+Para asegurar la consistencia y evitar conflictos de dependencias, el proyecto utiliza un entorno virtual de Python. Toda la información sobre cómo configurar y gestionar este entorno se encuentra en un documento dedicado.
+
+### [**>> Guía del Entorno Virtual <<**](./VIRTUAL_ENV.md)
+
+### 3. Arquitectura y Tecnologías
 
 - **Frontend:** **Streamlit**.
 - **Lógica de Backend:** **Python 3**, estructurado en un directorio `src/`.
@@ -22,7 +28,7 @@ Toda la infraestructura de backend se gestiona a través de **Google Firebase**.
 - **Almacenamiento de Archivos:** **Google Firebase Storage**.
 - **Gestión de Secretos:** A través de `.streamlit/secrets.toml`.
 
-### 3. Flujo de la Aplicación y Experiencia de Usuario
+### 4. Flujo de la Aplicación y Experiencia de Usuario
 
 #### Flujo de Inicio de Sesión
 El flujo de inicio de sesión es central y explícito para mejorar la accesibilidad. El usuario ingresa un "Nombre de Poder" en la página principal para acceder a la aplicación.
@@ -33,7 +39,7 @@ Una vez dentro, la interfaz se divide en tres pestañas:
 2.  **🔄 Transmutar:** Permite al usuario subir una imagen propia o usar la última generada para modificarla con un nuevo prompt.
 3.  **🔥 Psycho-Chat:** Abre una interfaz de chat para conversar directamente con el Psycho-Bot. La IA está configurada con un `system_prompt` detallado que le confiere una personalidad única, rebelde y filosófica. El historial de la conversación es efímero y se mantiene solo durante la sesión actual.
 
-### 4. Estructura del Código Modular
+### 5. Estructura del Código Modular
 
 -   **`chat_bot.py`:** Punto de entrada mínimo.
 -   **`src/config.py`:** Centraliza constantes y configuraciones.
@@ -44,7 +50,7 @@ Una vez dentro, la interfaz se divide en tres pestañas:
 -   **`src/ui_components.py`:** Contiene funciones reutilizables para la UI.
 -   **`src/main_ui.py`:** Orquestador principal que construye la interfaz.
 
-### 5. Depuración y Monitoreo
+### 6. Depuración y Monitoreo
 
 Para facilitar la depuración y observar el comportamiento de la aplicación en tiempo real, se ha implementado un sistema de logging centralizado utilizando el módulo `logging` de Python.
 
@@ -54,7 +60,7 @@ Para facilitar la depuración y observar el comportamiento de la aplicación en 
     -   En `src/gemini_utils.py`, se registran logs `INFO`, `WARNING` y `ERROR` para monitorear las interacciones con la API de Google.
     -   En `src/main_ui.py`, se registran logs de `WARNING` cada vez que un usuario es bloqueado por el cooldown o por el límite diario global, permitiendo monitorear la frecuencia de estas restricciones.
 
-### 6. Control de Costos y Límites de Uso (Rate Limiting)
+### 7. Control de Costos y Límites de Uso (Rate Limiting)
 
 Para garantizar la sostenibilidad del proyecto y prevenir abusos, se han implementado dos mecanismos de control de uso:
 
@@ -66,12 +72,14 @@ Para garantizar la sostenibilidad del proyecto y prevenir abusos, se han impleme
     -   **Implementación:** Se utiliza `st.session_state` para almacenar la marca de tiempo de la última solicitud del usuario, validando el tiempo transcurrido en cada nueva petición.
     -   **Configuración:** El tiempo de espera se define en `src/config.py` con la constante `USER_COOLDOWN_SECONDS`.
 
-### 7. Parámetros de Creación (Sliders)
+### 8. Parámetros de Creación (Sliders)
 
-Para ofrecer un control granular sobre el proceso creativo, la interfaz incluye una serie de sliders en la barra lateral. Estos se dividen en dos categorías: Parámetros Creativos y Parámetros de la IA.
+Para ofrecer un control granular sobre el proceso creativo, la interfaz incluye una serie de controles en la barra lateral.
 
 #### Parámetros Creativos
-Estos sliders influyen directamente en la construcción del prompt que se envía al modelo, alterando la dirección artística de la imagen.
+Estos controles influyen directamente en la construcción del prompt que se envía al modelo.
+
+-   **🎨 Estilo Artístico:** Un menú desplegable para seleccionar la base visual de la imagen. Las opciones incluyen "fusion" (una mezcla de estilos), "photorealistic" (para un acabado realista), "sketch" (estilo boceto) y "glitch" (arte corrupto).
 
 -   **🌀 Nivel de Glitch:** Controla la intensidad de los artefactos visuales y la estética "glitch".
     -   **Bajo (0.0 - 0.3):** Imágenes más limpias con sutiles aberraciones.
@@ -94,7 +102,7 @@ Estos sliders ajustan el comportamiento del modelo de IA durante el proceso de g
 
 -   **🤖 Top-K (Diversidad):** Limita la selección de "palabras" (tokens) a las K más probables. Un valor más bajo puede hacer la imagen menos diversa, mientras que un valor más alto permite más libertad.
 
-### 8. Arquitectura de Datos (Firebase)
+### 9. Arquitectura de Datos (Firebase)
 
 -   **Firestore:**
     -   `usuarios/{user_uuid}/user_images/{image_id}`: Guarda los metadatos de cada imagen.
@@ -103,7 +111,7 @@ Estos sliders ajustan el comportamiento del modelo de IA durante el proceso de g
 
 ---
 
-### 9. Roadmap
+### 10. Roadmap
 
 -   [x] **Ingeniería de Prompts y Personalidad del Modelo:** Completado.
 -   [x] **Añadir Pestaña de Chatbot:** Completado.
@@ -115,6 +123,6 @@ Estos sliders ajustan el comportamiento del modelo de IA durante el proceso de g
 
 ---
 
-### 10. Panel de Administración (Observatorio Secreto)
+### 11. Panel de Administración (Observatorio Secreto)
 
 El proyecto incluye un panel de administración local (`admin_dashboard.py`) que ha sido optimizado para reducir costos de lectura en Firebase. Ahora muestra métricas globales (total de usuarios e imágenes) y una lista de usuarios registrados. Está excluido del repositorio y protegido por contraseña.
