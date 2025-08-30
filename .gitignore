@@ -24,3 +24,6 @@ test_chat.py
 
 # Entorno virtual
 /.venv
+
+# Archivos de logs
+*.txt

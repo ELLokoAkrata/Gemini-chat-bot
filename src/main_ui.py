@@ -13,7 +13,7 @@ from src.firebase_utils import (
     increment_daily_count
 )
 from src.gemini_utils import initialize_genai_client, generate_image_from_prompt
-from src.prompt_engineering import engineer_prompt
+from src.prompt_engineering import engineer_prompt, ART_STYLES
 from src.chat_logic import initialize_chat_client, stream_chat_response
 from src.ui_components import (
     display_image_with_expander,
@@ -26,6 +26,14 @@ from src.ui_components import (
 def show_generation_controls():
     """Muestra los sliders de control en la barra lateral y devuelve sus valores."""
     st.sidebar.header("🌀 Parámetros de Creación 🌀")
+    
+    art_style = st.sidebar.selectbox(
+        "Estilo Artístico 🎨",
+        options=list(ART_STYLES.keys()),
+        index=0, # 'fusion' por defecto
+        help="Elige el estilo visual principal para la imagen."
+    )
+
     glitch_value = st.sidebar.slider(
         "Nivel de Glitch 藝術", 0.0, 1.0, 0.4, 0.05,
         help="Controla la intensidad de los artefactos visuales y la estética 'glitch'."
@@ -48,7 +56,7 @@ def show_generation_controls():
         "Top-K (Diversidad)", 1, 50, 40, 1,
         help="Limita la selección de tokens a los K más probables. Ajusta la diversidad de la salida."
     )
-    return glitch_value, chaos_value, temperature, top_p, top_k
+    return art_style, glitch_value, chaos_value, temperature, top_p, top_k
 
 def setup_page():
     """Configura la página de Streamlit."""
@@ -107,7 +115,7 @@ def setup_page():
 
 def handle_image_processing(
     client, user_prompt, user_uuid,
-    glitch_value, chaos_value, temperature, top_p, top_k,
+    art_style, glitch_value, chaos_value, temperature, top_p, top_k,
     original_image: Image.Image = None
 ):
     """
@@ -138,6 +146,7 @@ def handle_image_processing(
     # --- Proceso de Generación / Modificación ---
     final_prompt = engineer_prompt(
         user_input=user_prompt,
+        style=art_style,
         glitch_value=glitch_value,
         chaos_value=chaos_value
     )
@@ -200,7 +209,7 @@ def run_app():
             show_user_info()
             st.markdown("---")
             # Obtener los valores de los sliders
-            glitch, chaos, temp, top_p, top_k = show_generation_controls()
+            art_style, glitch, chaos, temp, top_p, top_k = show_generation_controls()
 
         user_uuid = st.session_state.get("user_uuid")
         tab1, tab2, tab3 = st.tabs(["🎨 Generar", "🔄 Transmutar", "🔥 Psycho-Chat"])
@@ -215,7 +224,7 @@ def run_app():
                 if submit_gen:
                     handle_image_processing(
                         image_client, prompt_input, user_uuid,
-                        glitch, chaos, temp, top_p, top_k
+                        art_style, glitch, chaos, temp, top_p, top_k
                     )
 
             if "last_generated_image" in st.session_state:
@@ -256,7 +265,7 @@ def run_app():
                     if original_image:
                         handle_image_processing(
                             image_client, mod_prompt, user_uuid,
-                            glitch, chaos, temp, top_p, top_k,
+                            art_style, glitch, chaos, temp, top_p, top_k,
                             original_image=original_image
                         )
                     else:
