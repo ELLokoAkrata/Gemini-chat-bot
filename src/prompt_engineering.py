@@ -60,7 +60,7 @@ def get_level_from_value(value: float, levels: list) -> str:
     index = int(value * (len(levels) - 1))
     return levels[index]
 
-def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: float = 0.6, style: str = "fusion") -> str:
+def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: float = 0.6, style: str = "fusion", use_core_aesthetic: bool = True) -> str:
     """
     Dynamically builds a prompt based on user input and creative parameters.
     """
@@ -85,11 +85,14 @@ def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: flo
     # 4. Assemble the final prompt
     prompt_parts = [
         f"The user's vision is: '{translated_prompt}'.",
-        f"Core aesthetic: {CORE_AESTHETIC}.",
         f"Artistic style: {style_modifier}, {chaos_modifier}, {glitch_modifier}.",
-        "The final image must be a high-quality, visually striking piece of underground art.",
-        "Interpret the user's vision through the lens of the core aesthetic. Be creative, chaotic, and bold."
+        "The final image must be a high-quality, visually striking piece of art."
     ]
+
+    if use_core_aesthetic:
+        prompt_parts.insert(1, f"Core aesthetic: {CORE_AESTHETIC}.")
+        prompt_parts.append("Interpret the user's vision through the lens of the core aesthetic. Be creative, chaotic, and bold.")
+        prompt_parts[3] = "The final image must be a high-quality, visually striking piece of underground art." # Make it more specific again
     
     final_prompt = "\n".join(prompt_parts)
     

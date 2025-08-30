@@ -27,6 +27,12 @@ def show_generation_controls():
     """Muestra los sliders de control en la barra lateral y devuelve sus valores."""
     st.sidebar.header("🌀 Parámetros de Creación 🌀")
     
+    use_core_aesthetic = st.sidebar.checkbox(
+        "Mantener Estética Central", 
+        value=True, 
+        help="Actívalo para fusionar tu estilo con la temática anarco-punk. Desactívalo para un estilo puro."
+    )
+
     art_style = st.sidebar.selectbox(
         "Estilo Artístico 🎨",
         options=list(ART_STYLES.keys()),
@@ -56,7 +62,7 @@ def show_generation_controls():
         "Top-K (Diversidad)", 1, 50, 40, 1,
         help="Limita la selección de tokens a los K más probables. Ajusta la diversidad de la salida."
     )
-    return art_style, glitch_value, chaos_value, temperature, top_p, top_k
+    return use_core_aesthetic, art_style, glitch_value, chaos_value, temperature, top_p, top_k
 
 def setup_page():
     """Configura la página de Streamlit."""
@@ -115,7 +121,7 @@ def setup_page():
 
 def handle_image_processing(
     client, user_prompt, user_uuid,
-    art_style, glitch_value, chaos_value, temperature, top_p, top_k,
+    use_core_aesthetic, art_style, glitch_value, chaos_value, temperature, top_p, top_k,
     original_image: Image.Image = None
 ):
     """
@@ -148,7 +154,8 @@ def handle_image_processing(
         user_input=user_prompt,
         style=art_style,
         glitch_value=glitch_value,
-        chaos_value=chaos_value
+        chaos_value=chaos_value,
+        use_core_aesthetic=use_core_aesthetic
     )
     processed_image = generate_image_from_prompt(
         client=client,
@@ -209,7 +216,7 @@ def run_app():
             show_user_info()
             st.markdown("---")
             # Obtener los valores de los sliders
-            art_style, glitch, chaos, temp, top_p, top_k = show_generation_controls()
+            use_core, art_style, glitch, chaos, temp, top_p, top_k = show_generation_controls()
 
         user_uuid = st.session_state.get("user_uuid")
         tab1, tab2, tab3 = st.tabs(["🎨 Generar", "🔄 Transmutar", "🔥 Psycho-Chat"])
@@ -224,7 +231,7 @@ def run_app():
                 if submit_gen:
                     handle_image_processing(
                         image_client, prompt_input, user_uuid,
-                        art_style, glitch, chaos, temp, top_p, top_k
+                        use_core, art_style, glitch, chaos, temp, top_p, top_k
                     )
 
             if "last_generated_image" in st.session_state:
@@ -265,7 +272,7 @@ def run_app():
                     if original_image:
                         handle_image_processing(
                             image_client, mod_prompt, user_uuid,
-                            art_style, glitch, chaos, temp, top_p, top_k,
+                            use_core, art_style, glitch, chaos, temp, top_p, top_k,
                             original_image=original_image
                         )
                     else:
