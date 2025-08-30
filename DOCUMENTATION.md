@@ -66,7 +66,35 @@ Para garantizar la sostenibilidad del proyecto y prevenir abusos, se han impleme
     -   **Implementación:** Se utiliza `st.session_state` para almacenar la marca de tiempo de la última solicitud del usuario, validando el tiempo transcurrido en cada nueva petición.
     -   **Configuración:** El tiempo de espera se define en `src/config.py` con la constante `USER_COOLDOWN_SECONDS`.
 
-### 7. Arquitectura de Datos (Firebase)
+### 7. Parámetros de Creación (Sliders)
+
+Para ofrecer un control granular sobre el proceso creativo, la interfaz incluye una serie de sliders en la barra lateral. Estos se dividen en dos categorías: Parámetros Creativos y Parámetros de la IA.
+
+#### Parámetros Creativos
+Estos sliders influyen directamente en la construcción del prompt que se envía al modelo, alterando la dirección artística de la imagen.
+
+-   **🌀 Nivel de Glitch:** Controla la intensidad de los artefactos visuales y la estética "glitch".
+    -   **Bajo (0.0 - 0.3):** Imágenes más limpias con sutiles aberraciones.
+    -   **Medio (0.4 - 0.7):** Efectos de glitch art controlados, como scanlines o pixel sorting.
+    -   **Alto (0.8 - 1.0):** Caos visual extremo, con efectos de datamoshing y corrupción de datos.
+
+-   **🔥 Nivel de Caos:** Define el nivel de desorden, energía y crudeza en la composición general.
+    -   **Bajo (0.0 - 0.3):** Composiciones más ordenadas y limpias.
+    -   **Medio (0.4 - 0.7):** Elementos de energía cruda, texturas gritty y una sensación de arte callejero.
+    -   **Alto (0.8 - 1.0):** Una explosión de energía impredecible y composición caótica.
+
+#### Parámetros de la IA
+Estos sliders ajustan el comportamiento del modelo de IA durante el proceso de generación.
+
+-   **🤖 Temperatura (Creatividad):** Controla la aleatoriedad de la respuesta.
+    -   **Valores altos (ej. 1.0):** Generan resultados más inesperados, diversos y creativos. Ideal para la experimentación.
+    -   **Valores bajos (ej. 0.1):** Producen resultados más predecibles y conservadores, apegándose más al prompt.
+
+-   **🤖 Top-P (Coherencia):** Filtra las opciones menos probables en cada paso de la generación. El valor por defecto (0.95) suele ser el ideal y no necesita muchos ajustes.
+
+-   **🤖 Top-K (Diversidad):** Limita la selección de "palabras" (tokens) a las K más probables. Un valor más bajo puede hacer la imagen menos diversa, mientras que un valor más alto permite más libertad.
+
+### 8. Arquitectura de Datos (Firebase)
 
 -   **Firestore:**
     -   `usuarios/{user_uuid}/user_images/{image_id}`: Guarda los metadatos de cada imagen.
@@ -75,7 +103,7 @@ Para garantizar la sostenibilidad del proyecto y prevenir abusos, se han impleme
 
 ---
 
-### 8. Roadmap
+### 9. Roadmap
 
 -   [x] **Ingeniería de Prompts y Personalidad del Modelo:** Completado.
 -   [x] **Añadir Pestaña de Chatbot:** Completado.
@@ -87,6 +115,6 @@ Para garantizar la sostenibilidad del proyecto y prevenir abusos, se han impleme
 
 ---
 
-### 9. Panel de Administración (Observatorio Secreto)
+### 10. Panel de Administración (Observatorio Secreto)
 
 El proyecto incluye un panel de administración local (`admin_dashboard.py`) que ha sido optimizado para reducir costos de lectura en Firebase. Ahora muestra métricas globales (total de usuarios e imágenes) y una lista de usuarios registrados. Está excluido del repositorio y protegido por contraseña.

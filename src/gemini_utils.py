@@ -1,11 +1,12 @@
 import streamlit as st
 from google import genai
+from google.genai import types
 from PIL import Image
 import io
 import traceback
 import logging
 
-from src.config import MODEL_ID, SAFETY_CONFIG
+from src.config import MODEL_ID, SAFETY_CONFIG, MAX_OUTPUT_TOKENS
 
 def initialize_genai_client():
     """
@@ -14,10 +15,16 @@ def initialize_genai_client():
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
     return genai.Client(api_key=GOOGLE_API_KEY)
 
-def generate_image_from_prompt(client, prompt: str, original_image: Image.Image = None):
+def generate_image_from_prompt(
+    client, 
+    prompt: str, 
+    original_image: Image.Image = None,
+    temperature: float = 1.0,
+    top_p: float = 0.95,
+    top_k: int = 40
+):
     """
-    Genera una imagen a partir de un prompt y una imagen original opcional.
-    Retorna un objeto Image de Pillow o None si falla.
+    Genera una imagen a partir de un prompt, con parámetros de generación dinámicos.
     """
     placeholder = st.empty()
     placeholder.markdown(
@@ -32,12 +39,29 @@ def generate_image_from_prompt(client, prompt: str, original_image: Image.Image 
     try:
         contents = [prompt, original_image] if original_image else [prompt]
         
-        logging.info(f"Enviando petición a la API de Gemini con prompt: '{prompt[:80]}...'")
+        # Construir el objeto de configuración UNIFICADO y PLANO
+        dynamic_config = types.GenerateContentConfig(
+            # Parámetros de generación directamente en el nivel superior
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            max_output_tokens=MAX_OUTPUT_TOKENS,
+            
+            # Configuración de seguridad al mismo nivel
+            safety_settings=SAFETY_CONFIG.safety_settings,
+            response_modalities=SAFETY_CONFIG.response_modalities
+        )
+
+        logging.info(f"Enviando petición a Gemini. Temp: {temperature}, Top-P: {top_p}, Top-K: {top_k}")
+        logging.info(f"Prompt: '{prompt[:120]}...'")
+
+        # Llamar a la API de la forma correcta, con el config unificado
         response = client.models.generate_content(
             model=MODEL_ID,
             contents=contents,
-            config=SAFETY_CONFIG
+            config=dynamic_config
         )
+        
         logging.info("Respuesta recibida exitosamente de la API de Gemini.")
         
         placeholder.empty()

@@ -1,12 +1,35 @@
 # src/prompt_engineering.py
+import logging
 
-META_PROMPT_TEMPLATE = """
-A high-quality, visually striking image in a fusion style of anarcho-punk, psycho-rebel, cyberpunk, street hacker, DIY, gritty, raw, chaotic.
-Artistic style: photorealistic render, ink and marker sketch, controlled glitch art.
-The user's vision is: {user_prompt_here}.
-Interpret the user's vision through the lens of the core aesthetic. Be creative, chaotic, and bold. The final image must feel like a piece of underground art.
-"""
+# --- Core Aesthetic ---
+CORE_AESTHETIC = "a fusion style of anarcho-punk, psycho-rebel, cyberpunk, street hacker, DIY, gritty, raw, chaotic"
 
+# --- Dynamic Modifiers ---
+# These can be controlled by sliders in the UI (e.g., mapping a 0-1 float to these keys)
+GLITCH_LEVELS = {
+    "none": "clean render",
+    "low": "subtle glitch art effects",
+    "medium": "controlled glitch art, minor artifacts, scan lines",
+    "high": "heavy glitch art, datamoshing, pixel sorting, corrupted data",
+    "extreme": "extreme glitch art, total visual chaos, databending, screen tear"
+}
+
+CHAOS_LEVELS = {
+    "none": "ordered, clean composition",
+    "low": "a touch of raw energy",
+    "medium": "gritty, chaotic elements, raw textures",
+    "high": "highly chaotic, raw, explosive composition, street art feel",
+    "extreme": "a maelstrom of pure chaos, explosive and unpredictable energy"
+}
+
+ART_STYLES = {
+    "fusion": "photorealistic render, ink and marker sketch, digital painting",
+    "photorealistic": "hyperrealistic, 8k, detailed, photorealistic render",
+    "sketch": "raw ink and marker sketch, cross-hatching, gritty lines",
+    "glitch": "pure glitch art, datamoshing, pixel sorting, corrupted data aesthetic"
+}
+
+# --- Emoji Translation ---
 EMOJI_GRIMOIRE = {
     "👨": "a male figure, a man, a boy",
     "👩": "a female figure, a woman, a girl",
@@ -32,18 +55,43 @@ def translate_emojis(text: str) -> str:
         text = text.replace(emoji, f"({meaning}) ")
     return text
 
-def engineer_prompt(user_input: str) -> str:
+def get_level_from_value(value: float, levels: list) -> str:
+    """Maps a float value (0-1) to a discrete level string."""
+    index = int(value * (len(levels) - 1))
+    return levels[index]
+
+def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: float = 0.6, style: str = "fusion") -> str:
     """
-    Translates emojis from user input and wraps it in the meta-prompt template.
+    Dynamically builds a prompt based on user input and creative parameters.
     """
     if not user_input.strip():
-        # If the user input is empty, we still want to generate something cool.
         user_input = "a chaotic and surreal vision"
 
-    # First, translate any emojis into their textual representations.
+    # 1. Translate Emojis
     translated_prompt = translate_emojis(user_input)
 
-    # Then, inject the user's vision into the master template.
-    final_prompt = META_PROMPT_TEMPLATE.format(user_prompt_here=translated_prompt)
+    # 2. Map slider values (0-1) to descriptive levels
+    glitch_levels_keys = list(GLITCH_LEVELS.keys())
+    chaos_levels_keys = list(CHAOS_LEVELS.keys())
     
+    glitch_level_key = get_level_from_value(glitch_value, glitch_levels_keys)
+    chaos_level_key = get_level_from_value(chaos_value, chaos_levels_keys)
+
+    # 3. Select modifiers based on levels
+    glitch_modifier = GLITCH_LEVELS[glitch_level_key]
+    chaos_modifier = CHAOS_LEVELS[chaos_level_key]
+    style_modifier = ART_STYLES.get(style, ART_STYLES["fusion"])
+
+    # 4. Assemble the final prompt
+    prompt_parts = [
+        f"The user's vision is: '{translated_prompt}'.",
+        f"Core aesthetic: {CORE_AESTHETIC}.",
+        f"Artistic style: {style_modifier}, {chaos_modifier}, {glitch_modifier}.",
+        "The final image must be a high-quality, visually striking piece of underground art.",
+        "Interpret the user's vision through the lens of the core aesthetic. Be creative, chaotic, and bold."
+    ]
+    
+    final_prompt = "\n".join(prompt_parts)
+    
+    logging.info(f"Engineered Prompt: {final_prompt}")
     return final_prompt.strip()

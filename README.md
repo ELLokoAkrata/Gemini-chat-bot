@@ -11,6 +11,7 @@ Puedes experimentar el Akelarre Generativo aquí:
 
 ## 🧠 Características Principales
 
+- **Control Creativo Total:** Ajusta parámetros como el nivel de "glitch", "caos", y la "temperatura" de la IA a través de sliders para afinar tu visión creativa.
 - **Chat con Personalidad (Psycho-Bot):** Conversa directamente con una IA que posee una personalidad anarco-punk definida.
 - **Ingeniería de Prompts Integrada:** La IA de imágenes tiene una personalidad base (anarco-punk, ciber-rebelde) que guía todas las creaciones.
 - **Interpretación de Símbolos:** El sistema interpreta emojis 💀🔥🤖 como conceptos, permitiendo construir visiones de forma intuitiva directamente desde el teclado.

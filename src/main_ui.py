@@ -6,8 +6,8 @@ import logging
 
 from src.config import STORAGE_ROOT_FOLDER, USER_COOLDOWN_SECONDS
 from src.firebase_utils import (
-    initialize_firebase, 
-    upload_image_to_storage, 
+    initialize_firebase,
+    upload_image_to_storage,
     save_image_metadata,
     check_daily_limit,
     increment_daily_count
@@ -22,6 +22,33 @@ from src.ui_components import (
     show_user_info,
     show_welcome_message
 )
+
+def show_generation_controls():
+    """Muestra los sliders de control en la barra lateral y devuelve sus valores."""
+    st.sidebar.header("🌀 Parámetros de Creación 🌀")
+    glitch_value = st.sidebar.slider(
+        "Nivel de Glitch 藝術", 0.0, 1.0, 0.4, 0.05,
+        help="Controla la intensidad de los artefactos visuales y la estética 'glitch'."
+    )
+    chaos_value = st.sidebar.slider(
+        "Nivel de Caos 🔥", 0.0, 1.0, 0.6, 0.05,
+        help="Define el nivel de desorden, energía y crudeza en la composición."
+    )
+
+    st.sidebar.header("🤖 Parámetros de la IA 🤖")
+    temperature = st.sidebar.slider(
+        "Temperatura (Creatividad)", 0.0, 1.0, 1.0, 0.05,
+        help="Valores más altos (ej. 1.0) generan resultados más inesperados y creativos. Valores bajos (ej. 0.1) son más conservadores."
+    )
+    top_p = st.sidebar.slider(
+        "Top-P (Coherencia)", 0.0, 1.0, 0.95, 0.05,
+        help="Filtra las opciones menos probables. No suele ser necesario cambiarlo."
+    )
+    top_k = st.sidebar.slider(
+        "Top-K (Diversidad)", 1, 50, 40, 1,
+        help="Limita la selección de tokens a los K más probables. Ajusta la diversidad de la salida."
+    )
+    return glitch_value, chaos_value, temperature, top_p, top_k
 
 def setup_page():
     """Configura la página de Streamlit."""
@@ -78,9 +105,17 @@ def setup_page():
     """, unsafe_allow_html=True)
 
 
-def handle_image_generation(client, user_prompt, user_uuid):
-    """Gestiona la lógica de generación y guardado de una nueva imagen."""
+def handle_image_processing(
+    client, user_prompt, user_uuid,
+    glitch_value, chaos_value, temperature, top_p, top_k,
+    original_image: Image.Image = None
+):
+    """
+    Gestiona la lógica unificada para generar o modificar una imagen,
+    incluyendo validaciones y guardado.
+    """
     db = initialize_firebase()
+    is_modification = original_image is not None
 
     # --- 1. Verificación de Cooldown del Usuario ---
     now = datetime.now()
@@ -88,147 +123,101 @@ def handle_image_generation(client, user_prompt, user_uuid):
         time_since_last_request = now - st.session_state["last_request_time"]
         if time_since_last_request < timedelta(seconds=USER_COOLDOWN_SECONDS):
             remaining_time = USER_COOLDOWN_SECONDS - time_since_last_request.total_seconds()
-            st.error(f"⏳ Energía del caos baja. Espera {remaining_time:.0f} segundos antes de generar otra imagen.")
-            logging.warning(f"Usuario {user_uuid} limitado por cooldown. Tiempo restante: {remaining_time:.0f}s")
+            st.error(f"⏳ Energía del caos baja. Espera {remaining_time:.0f} segundos.")
+            logging.warning(f"Usuario {user_uuid} limitado por cooldown.")
             return
 
     # --- 2. Verificación del Límite Diario Global ---
     if check_daily_limit(db):
-        st.error("🚫 El Akelarre ha alcanzado su límite de energía por hoy. Vuelve mañana para seguir creando.")
-        logging.warning(f"Generación bloqueada para {user_uuid}. Límite diario global alcanzado.")
+        st.error("🚫 El Akelarre ha alcanzado su límite de energía por hoy. Vuelve mañana.")
+        logging.warning(f"Generación bloqueada para {user_uuid}. Límite diario alcanzado.")
         return
 
-    # Si las validaciones pasan, actualizamos el tiempo de la última petición
     st.session_state["last_request_time"] = now
 
-    # --- Proceso de Generación ---
-    final_prompt = engineer_prompt(user_prompt)
-    generated_image = generate_image_from_prompt(client, final_prompt)
-    
-    if generated_image:
-        # --- 3. Incrementar el contador solo si la imagen se generó con éxito ---
-        increment_daily_count(db)
+    # --- Proceso de Generación / Modificación ---
+    final_prompt = engineer_prompt(
+        user_input=user_prompt,
+        glitch_value=glitch_value,
+        chaos_value=chaos_value
+    )
+    processed_image = generate_image_from_prompt(
+        client=client,
+        prompt=final_prompt,
+        original_image=original_image,
+        temperature=temperature,
+        top_p=top_p,
+        top_k=top_k
+    )
 
-        output_filename = generate_filename(is_modified=False)
-        generated_image.save(output_filename)
-        
-        st.markdown("<h3 style='text-align: center;'>🖼️ Creación Manifestada</h3>", unsafe_allow_html=True)
-        display_image_with_expander(image=generated_image, caption=f"Input: {user_prompt}")
-        
+    if processed_image:
+        increment_daily_count(db)
+        output_filename = generate_filename(is_modified=is_modification)
+        processed_image.save(output_filename)
+
+        title = "🖼️ Transmutación Realizada" if is_modification else "🖼️ Creación Manifestada"
+        st.markdown(f"<h3 style='text-align: center;'>{title}</h3>", unsafe_allow_html=True)
+        display_image_with_expander(image=processed_image, caption=f"Input: {user_prompt}")
+
         remote_path = f"{STORAGE_ROOT_FOLDER}/{user_uuid}/{output_filename}"
-        
         metadata = {
-            "user_prompt": user_prompt,
-            "final_prompt": final_prompt,
-            "timestamp": datetime.now(),
-            "storage_path": remote_path,
-            "is_modified": False
+            "user_prompt": user_prompt, "final_prompt": final_prompt,
+            "timestamp": datetime.now(), "storage_path": remote_path,
+            "is_modified": is_modification,
+            "params": {
+                "glitch": glitch_value, "chaos": chaos_value, "temp": temperature,
+                "top_p": top_p, "top_k": top_k
+            }
         }
         save_image_metadata(db, user_uuid, metadata)
-        
         upload_image_to_storage(output_filename, remote_path)
-        
-        st.session_state["last_generated_image"] = {
+
+        session_key = "last_modified_image" if is_modification else "last_generated_image"
+        st.session_state[session_key] = {
             "filename": output_filename,
             "prompt": user_prompt,
-            "image": generated_image
+            "image": processed_image
         }
-        st.session_state["current_generated_image"] = True
+        if not is_modification:
+            st.session_state["current_generated_image"] = True
 
-def handle_image_modification(client, user_prompt, user_uuid, original_image):
-    """Gestiona la lógica de modificación y guardado de una imagen."""
-    db = initialize_firebase()
-
-    # --- 1. Verificación de Cooldown del Usuario ---
-    now = datetime.now()
-    if "last_request_time" in st.session_state:
-        time_since_last_request = now - st.session_state["last_request_time"]
-        if time_since_last_request < timedelta(seconds=USER_COOLDOWN_SECONDS):
-            remaining_time = USER_COOLDOWN_SECONDS - time_since_last_request.total_seconds()
-            st.error(f"⏳ Energía del caos baja. Espera {remaining_time:.0f} segundos antes de transmutar de nuevo.")
-            logging.warning(f"Usuario {user_uuid} limitado por cooldown. Tiempo restante: {remaining_time:.0f}s")
-            return
-
-    # --- 2. Verificación del Límite Diario Global ---
-    if check_daily_limit(db):
-        st.error("🚫 El Akelarre ha alcanzado su límite de energía por hoy. Vuelve mañana para seguir creando.")
-        logging.warning(f"Generación bloqueada para {user_uuid}. Límite diario global alcanzado.")
-        return
-        
-    # Si las validaciones pasan, actualizamos el tiempo de la última petición
-    st.session_state["last_request_time"] = now
-
-    # --- Proceso de Modificación ---
-    final_prompt = engineer_prompt(user_prompt)
-    mod_image = generate_image_from_prompt(client, final_prompt, original_image)
-
-    if mod_image:
-        # --- 3. Incrementar el contador solo si la imagen se generó con éxito ---
-        increment_daily_count(db)
-
-        output_filename = generate_filename(is_modified=True)
-        mod_image.save(output_filename)
-        
-        st.markdown("<h3 style='text-align: center;'>🖼️ Transmutación Realizada</h3>", unsafe_allow_html=True)
-        display_image_with_expander(image=mod_image, caption=f"Input: {user_prompt}")
-        
-        remote_path = f"{STORAGE_ROOT_FOLDER}/{user_uuid}/{output_filename}"
-
-        metadata = {
-            "user_prompt": user_prompt,
-            "final_prompt": final_prompt,
-            "timestamp": datetime.now(),
-            "storage_path": remote_path,
-            "is_modified": True
-        }
-        save_image_metadata(db, user_uuid, metadata)
-        
-        upload_image_to_storage(output_filename, remote_path)
-        
-        st.session_state["last_modified_image"] = {
-            "filename": output_filename,
-            "prompt": user_prompt,
-            "image": mod_image
-        }
 
 def run_app():
     """Función principal que ejecuta la aplicación Streamlit."""
     setup_page()
     db = initialize_firebase()
-    # El cliente de GenAI para imágenes se inicializa aquí
     image_client = initialize_genai_client()
 
     if not st.session_state.get("logged_in", False):
-        # --- VISTA DE LOGIN ---
         show_welcome_message()
-        
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             show_login_form(db)
-
     else:
-        # --- VISTA PRINCIPAL DE LA APP ---
         with st.sidebar:
             st.header("💊 Control Neural")
             st.markdown("---")
             show_user_info()
+            st.markdown("---")
+            # Obtener los valores de los sliders
+            glitch, chaos, temp, top_p, top_k = show_generation_controls()
 
         user_uuid = st.session_state.get("user_uuid")
-        
         tab1, tab2, tab3 = st.tabs(["🎨 Generar", "🔄 Transmutar", "🔥 Psycho-Chat"])
 
         with tab1:
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 with st.form("image_generation_form"):
-                    prompt_input = st.text_area("💡 Invoca tu visión (puedes usar texto y emojis):", 
-                                              key="prompt_input_area_gen")
+                    prompt_input = st.text_area("💡 Invoca tu visión (puedes usar texto y emojis):", key="prompt_input_area_gen")
                     submit_gen = st.form_submit_button("🔥 Generar")
-                
-                if submit_gen:
-                    handle_image_generation(image_client, prompt_input, user_uuid)
 
-            # Lógica de descarga para la imagen generada
+                if submit_gen:
+                    handle_image_processing(
+                        image_client, prompt_input, user_uuid,
+                        glitch, chaos, temp, top_p, top_k
+                    )
+
             if "last_generated_image" in st.session_state:
                 d1, d2, d3 = st.columns([1, 2, 1])
                 with d2:
@@ -247,7 +236,7 @@ def run_app():
             c1, c2, c3 = st.columns([1, 2, 1])
             with c2:
                 uploaded_file = st.file_uploader("Sube una imagen", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
-            
+
             original_image = None
             if uploaded_file is not None:
                 original_image = Image.open(uploaded_file)
@@ -260,17 +249,19 @@ def run_app():
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 with st.form("image_modification_form"):
-                    mod_prompt = st.text_area("💡 Describe la mutación (puedes usar texto y emojis):", 
-                                            key="prompt_input_area_mod")
+                    mod_prompt = st.text_area("💡 Describe la mutación (puedes usar texto y emojis):", key="prompt_input_area_mod")
                     submit_mod = st.form_submit_button("🔥 Modificar")
-                
+
                 if submit_mod:
                     if original_image:
-                        handle_image_modification(image_client, mod_prompt, user_uuid, original_image)
+                        handle_image_processing(
+                            image_client, mod_prompt, user_uuid,
+                            glitch, chaos, temp, top_p, top_k,
+                            original_image=original_image
+                        )
                     else:
                         st.error("💀 No hay imagen disponible. Sube una o genera una nueva.")
-            
-            # Lógica de descarga para la imagen modificada
+
             if "last_modified_image" in st.session_state:
                 d1, d2, d3 = st.columns([1, 2, 1])
                 with d2:
@@ -283,36 +274,28 @@ def run_app():
                                 file_name=last_mod_image["filename"],
                                 mime="image/png"
                             )
-        
+
         with tab3:
             st.header("Conversación con el Abismo")
-
-            # Inicializar el cliente de chat y el historial en el estado de la sesión
             if "chat_client" not in st.session_state:
                 st.session_state.chat_client = initialize_chat_client()
             if "messages" not in st.session_state:
                 st.session_state.messages = []
-
-            # Mostrar mensajes del historial
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
-
-            # Generar respuesta del asistente si el último mensaje es del usuario
             if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
                 with st.chat_message("assistant"):
                     with st.spinner("El abismo está susurrando..."):
                         response_stream = stream_chat_response(
-                            st.session_state.chat_client, 
+                            st.session_state.chat_client,
                             st.session_state.messages
                         )
                         full_response = st.write_stream(response_stream)
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
-
-            # Aceptar entrada del usuario. Esto siempre se ejecuta al final.
             if prompt := st.chat_input("ESCÚPEME TU VENENO..."):
                 st.session_state.messages.append({"role": "user", "content": prompt})
                 st.rerun()
-    
+
     st.markdown("---")
-    st.caption("Ψ Sistema EsquizoAI 3.3.3 | Akelarre Generativo") # no cambiar nunca este pie de página (psychobot)
+    st.caption("Ψ Sistema EsquizoAI 3.3.3 | Akelarre Generativo")
