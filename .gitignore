@@ -27,3 +27,14 @@ test_chat.py
 
 # Archivos de logs
 *.txt
+*.log
+
+# Carpetas de salida
+/downloads/
+/generated_videos/
+
+# Archivos de experimentación específicos
+ejemplo_veo_3.py
+test_video.py
+text_to_audio.py
+out_direct.wav
