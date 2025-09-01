@@ -79,7 +79,7 @@ Para ofrecer un control granular sobre el proceso creativo, la interfaz incluye 
 #### Parámetros Creativos
 Estos controles influyen directamente en la construcción del prompt que se envía al modelo.
 
--   **🎨 Estilo Artístico:** Un menú desplegable para seleccionar la base visual de la imagen. Las opciones incluyen "fusion" (una mezcla de estilos), "photorealistic" (para un acabado realista), "sketch" (estilo boceto) y "glitch" (arte corrupto).
+-   **🎨 Estilo Artístico:** Un menú desplegable para seleccionar la base visual de la imagen. Las opciones incluyen "fusion", "photorealistic", "sketch", "glitch", "anime_fusion" (para un estilo de anime dinámico) e "isometric" (para vistas en 2.5D).
 
 -   **🌀 Nivel de Glitch:** Controla la intensidad de los artefactos visuales y la estética "glitch".
     -   **Bajo (0.0 - 0.3):** Imágenes más limpias con sutiles aberraciones.

@@ -26,7 +26,9 @@ ART_STYLES = {
     "fusion": "photorealistic render, ink and marker sketch, digital painting",
     "photorealistic": "hyperrealistic, 8k, detailed, photorealistic render",
     "sketch": "raw ink and marker sketch, cross-hatching, gritty lines",
-    "glitch": "pure glitch art, datamoshing, pixel sorting, corrupted data aesthetic"
+    "glitch": "pure glitch art, datamoshing, pixel sorting, corrupted data aesthetic",
+    "anime_fusion": "Dynamic shonen anime style, fusing the painterly backgrounds of Studio Ghibli with the iconic character design and high-energy action of Fullmetal Alchemist and Dragon Ball Z. Clean line art, vibrant colors, expressive characters.",
+    "isometric": "A clean and detailed isometric diorama. Rendered in a 2.5D perspective with sharp edges and a focus on clear, geometric shapes. Often associated with vector art or low-poly design."
 }
 
 # --- Emoji Translation ---
