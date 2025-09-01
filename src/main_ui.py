@@ -128,7 +128,7 @@ def handle_image_processing(
     Gestiona la lógica unificada para generar o modificar una imagen,
     incluyendo validaciones y guardado.
     """
-    db = initialize_firebase()
+    db, _ = initialize_firebase()
     is_modification = original_image is not None
 
     # --- 1. Verificación de Cooldown del Usuario ---
@@ -201,7 +201,7 @@ def handle_image_processing(
 def run_app():
     """Función principal que ejecuta la aplicación Streamlit."""
     setup_page()
-    db = initialize_firebase()
+    db, _ = initialize_firebase()
     image_client = initialize_genai_client()
 
     if not st.session_state.get("logged_in", False):
