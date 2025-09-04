@@ -38,3 +38,7 @@ ejemplo_veo_3.py
 test_video.py
 text_to_audio.py
 out_direct.wav
+
+
+# Cursor files
+.cursor/
