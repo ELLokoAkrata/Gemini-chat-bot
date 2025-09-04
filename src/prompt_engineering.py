@@ -2,7 +2,7 @@
 import logging
 
 # --- Core Aesthetic ---
-CORE_AESTHETIC = "a fusion style of anarcho-punk, psycho-rebel, cyberpunk, street hacker, DIY, gritty, raw, chaotic"
+CORE_AESTHETIC = "a fusion style of anarcho-punk, psycho-rebel, dream-punk, street hacker, DIY, gritty, raw, chaotic"
 
 # --- Dynamic Modifiers ---
 # These can be controlled by sliders in the UI (e.g., mapping a 0-1 float to these keys)
@@ -23,12 +23,14 @@ CHAOS_LEVELS = {
 }
 
 ART_STYLES = {
-    "fusion": "photorealistic render, ink and marker sketch, digital painting",
+    "fusion": "hyperdetailed render, ink and marker textures, digital painting",
     "photorealistic": "hyperrealistic, 8k, detailed, photorealistic render",
-    "sketch": "raw ink and marker sketch, cross-hatching, gritty lines",
+    "sketch": "raw ink and marker sketch, cross-hatching, gritty lines, raw textures, raw lines, frenetic energy",
     "glitch": "pure glitch art, datamoshing, pixel sorting, corrupted data aesthetic",
     "anime_fusion": "Dynamic shonen anime style, fusing the painterly backgrounds of Studio Ghibli with the iconic character design and high-energy action of Fullmetal Alchemist and Dragon Ball Z. Clean line art, vibrant colors, expressive characters.",
-    "isometric": "A clean and detailed isometric diorama. Rendered in a 2.5D perspective with sharp edges and a focus on clear, geometric shapes. Often associated with vector art or low-poly design."
+    "isometric": "A clean and detailed isometric diorama. Rendered in a 2.5D perspective with sharp edges and a focus on clear, geometric shapes. Often associated with vector art or low-poly design.",
+    "zine": "Raw, gritty, anarcho-punk fanzine aesthetic. High contrast, photocopied textures, distressed collage, hand-drawn, aggressive linework, underground metal and hardcore vibe. Chaotic and uncompromising, DIY ethos, ink and stencil art.",
+    "logo": "Bold, iconic, anarcho-punk logo design. Distressed, raw, and impactful, suitable for underground bands or movements. Strong typography, stencil elements, high contrast, black and white, with a rebellious, anti-establishment feel"
 }
 
 # --- Emoji Translation ---
@@ -67,7 +69,7 @@ def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: flo
     Dynamically builds a prompt based on user input and creative parameters.
     """
     if not user_input.strip():
-        user_input = "a chaotic and surreal vision"
+        user_input = "a chaotic and surreal vision of anarchy and chaos in anarcho punk mind"
 
     # 1. Translate Emojis
     translated_prompt = translate_emojis(user_input)
@@ -94,7 +96,7 @@ def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: flo
     if use_core_aesthetic:
         prompt_parts.insert(1, f"Core aesthetic: {CORE_AESTHETIC}.")
         prompt_parts.append("Interpret the user's vision through the lens of the core aesthetic. Be creative, chaotic, and bold.")
-        prompt_parts[3] = "The final image must be a high-quality, visually striking piece of underground art." # Make it more specific again
+        prompt_parts[3] = "The final image must be a high-quality, visually striking piece of underground DIY generative art of anarchy and chaos." # Make it more specific again
     
     final_prompt = "\n".join(prompt_parts)
     

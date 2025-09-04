@@ -53,7 +53,14 @@ def stream_chat_response(client, history):
     api_history = []
     for msg in history:
         role = "user" if msg["role"] == "user" else "model"
-        api_history.append(types.Content(role=role, parts=[types.Part(text=msg["content"])]))
+        # Asegurar que el contenido sea un string
+        content = msg["content"]
+        if hasattr(content, 'text'):  # Si es un StreamingOutput
+            content = content.text
+        elif not isinstance(content, str):  # Si es cualquier otro tipo
+            content = str(content)
+        
+        api_history.append(types.Content(role=role, parts=[types.Part(text=content)]))
 
     # Configuración de herramientas y seguridad
     tools = [types.Tool(googleSearch=types.GoogleSearch())]
@@ -80,5 +87,5 @@ def stream_chat_response(client, history):
         config=generation_config,
     )
 
-    for chunk in response_stream:
-        yield chunk.text
+    # Devolver el stream directamente, no iterar aquí
+    return response_stream

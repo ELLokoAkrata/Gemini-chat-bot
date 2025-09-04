@@ -108,6 +108,44 @@ def setup_page():
             border-radius: 10px;
             box-shadow: 0 0 10px #00ff00;
         }
+        
+        /* NUEVOS ESTILOS PARA EL CHAT */
+        /* Hacer el texto del chat más grande */
+        .stChatMessage > div > div > div {
+            font-size: 18px !important;
+            line-height: 1.6 !important;
+        }
+        
+        /* Estilo específico para mensajes del usuario */
+        .stChatMessage[data-testid="user"] > div > div > div {
+            font-size: 20px !important;
+            font-weight: 600 !important;
+            color: #ff6b6b !important;
+        }
+        
+        /* Estilo específico para mensajes del asistente */
+        .stChatMessage[data-testid="assistant"] > div > div > div {
+            font-size: 19px !important;
+            font-weight: 500 !important;
+            color: #00ff00 !important;
+        }
+        
+        /* Mejorar el input del chat */
+        .stChatInput > div > div > div > div > div > div > div {
+            font-size: 18px !important;
+            padding: 15px !important;
+        }
+        
+        /* Estilo para el placeholder del input */
+        .stChatInput input::placeholder {
+            font-size: 18px !important;
+            color: #666 !important;
+        }
+        
+        /* Mejorar el scroll del chat */
+        .stChatMessage {
+            margin-bottom: 20px !important;
+        }
         </style>
     """, unsafe_allow_html=True)
     st.title("🔥 Akelarre Generativo with Psycho-Bot 🔥")
@@ -196,6 +234,7 @@ def handle_image_processing(
         }
         if not is_modification:
             st.session_state["current_generated_image"] = True
+            st.session_state["image_ready"] = True  # Marcar que la imagen está lista
 
 
 def run_app():
@@ -234,7 +273,7 @@ def run_app():
                         use_core, art_style, glitch, chaos, temp, top_p, top_k
                     )
 
-            if "last_generated_image" in st.session_state:
+            if "last_generated_image" in st.session_state and st.session_state.get("image_ready", False):
                 d1, d2, d3 = st.columns([1, 2, 1])
                 with d2:
                     last_image = st.session_state["last_generated_image"]
@@ -297,21 +336,43 @@ def run_app():
                 st.session_state.chat_client = initialize_chat_client()
             if "messages" not in st.session_state:
                 st.session_state.messages = []
+            
+            # Mostrar historial de mensajes
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
+            
+            # Lógica de respuesta del bot - antes del input
             if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
                 with st.chat_message("assistant"):
-                    with st.spinner("El abismo está susurrando..."):
-                        response_stream = stream_chat_response(
-                            st.session_state.chat_client,
-                            st.session_state.messages
-                        )
-                        full_response = st.write_stream(response_stream)
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
-            if prompt := st.chat_input("ESCÚPEME TU VENENO..."):
-                st.session_state.messages.append({"role": "user", "content": prompt})
-                st.rerun()
+                    processing_placeholder = st.empty()
+                    processing_placeholder.markdown("🧠 *El abismo está procesando su demencia interna...*")
+                    
+                    response_stream = stream_chat_response(
+                        st.session_state.chat_client,
+                        st.session_state.messages
+                    )
+                    
+                    # Usar el enfoque del app.py para el streaming
+                    full_response_text = ""
+                    response_area = st.empty()
+                    
+                    for chunk in response_stream:
+                        if hasattr(chunk, "text") and chunk.text:
+                            full_response_text += chunk.text
+                            response_area.markdown(full_response_text)
+                    
+                    processing_placeholder.empty()
+                
+                # Agregar respuesta al historial
+                st.session_state.messages.append({"role": "assistant", "content": full_response_text})
+            
+            # Input del chat - al final para que aparezca abajo
+            if prompt := st.chat_input("ESCÚPEME TU VENENO...", key="psycho_chat_input"):
+                if prompt.strip():
+                    # Agregar mensaje del usuario al historial
+                    st.session_state.messages.append({"role": "user", "content": prompt})
+                    st.rerun()  # Necesario para mostrar el mensaje del usuario
 
     st.markdown("---")
     st.caption("Ψ Sistema EsquizoAI 3.3.3 | Akelarre Generativo")

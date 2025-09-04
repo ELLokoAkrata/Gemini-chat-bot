@@ -64,9 +64,10 @@ def show_welcome_message():
         <p>2. Una vez dentro, <b>invoca tu visión</b> en el campo de texto.</p>
         <p>3. Puedes usar <b>texto, emojis de tu teclado 💀🔥🤖, o una mezcla de ambos</b>.</p>
         <p>4. <b>Transmuta</b> la imagen generada o sube una propia para alterarla.</p>
+        <p>5. Activa la barra lateral para ajustar los controles de generación.</p>
         <br>
         <p>Este portal se alimenta de la energía del caos y de los créditos personales del desarrollador. Si quieres mantener la llama encendida, considera ofrendar una donación.</p>
-        <p><a href="https://www.paypal.com/paypalme/rdvibe?country.x=PE&locale.x=es_XC" target="_blank" style="color: #00ff00; text-decoration: underline;"><b>>> Donar para mantener vivo el Akelarre <<</b></a></p>
+        <p><a href="https://www.paypal.com/paypalme/rdvibe?country.x=PE&locale.x=es_XC" target="_blank" style="color: #ff0000; text-decoration: underline;"><b>>> Donar para mantener vivo el Akelarre <<</b></a></p>
         <br>
         <p><a href="https://github.com/Ellokoakarata/Gemini-chat-bot" target="_blank">Código Fuente del Ritual</a></p>
     </div>
