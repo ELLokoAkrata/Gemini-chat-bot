@@ -273,6 +273,7 @@ def run_app():
                         use_core, art_style, glitch, chaos, temp, top_p, top_k
                     )
 
+            # Mostrar botón de descarga SOLO si hay una imagen generada exitosamente
             if "last_generated_image" in st.session_state and st.session_state.get("image_ready", False):
                 d1, d2, d3 = st.columns([1, 2, 1])
                 with d2:
@@ -314,21 +315,21 @@ def run_app():
                             use_core, art_style, glitch, chaos, temp, top_p, top_k,
                             original_image=original_image
                         )
+                        # Solo mostrar el botón de descarga DESPUÉS de modificar exitosamente
+                        if "last_modified_image" in st.session_state:
+                            d1, d2, d3 = st.columns([1, 2, 1])
+                            with d2:
+                                last_mod_image = st.session_state["last_modified_image"]
+                                if os.path.exists(last_mod_image["filename"]):
+                                    with open(last_mod_image["filename"], "rb") as file:
+                                        st.download_button(
+                                            label="📥 Descargar Transmutación",
+                                            data=file,
+                                            file_name=last_mod_image["filename"],
+                                            mime="image/png"
+                                        )
                     else:
                         st.error("💀 No hay imagen disponible. Sube una o genera una nueva.")
-
-            if "last_modified_image" in st.session_state:
-                d1, d2, d3 = st.columns([1, 2, 1])
-                with d2:
-                    last_mod_image = st.session_state["last_modified_image"]
-                    if os.path.exists(last_mod_image["filename"]):
-                        with open(last_mod_image["filename"], "rb") as file:
-                            st.download_button(
-                                label="📥 Descargar Transmutación",
-                                data=file,
-                                file_name=last_mod_image["filename"],
-                                mime="image/png"
-                            )
 
         with tab3:
             st.header("Conversación con el Abismo")

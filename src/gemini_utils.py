@@ -64,8 +64,6 @@ def generate_image_from_prompt(
         
         logging.info("Respuesta recibida exitosamente de la API de Gemini.")
         
-        placeholder.empty()
-
         if not response or not response.candidates:
             st.markdown(
                 """
@@ -94,6 +92,7 @@ def generate_image_from_prompt(
             if hasattr(part, 'inline_data') and part.inline_data:
                 image_data = part.inline_data.data
                 logging.info("Imagen extraída correctamente de la respuesta.")
+                placeholder.empty()  # Limpiar el placeholder cuando la imagen se genera exitosamente
                 return Image.open(io.BytesIO(image_data))
 
     except Exception as e:
