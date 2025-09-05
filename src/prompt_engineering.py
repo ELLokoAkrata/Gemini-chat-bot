@@ -56,7 +56,7 @@ EMOJI_GRIMOIRE = {
 # --- Core Aesthetics Grimoire ---
 CORE_AESTHETICS = {
     "none": "no specific core aesthetic, raw user input",
-    "anarcho_punk": "anarcho-punk,rebel, leather jacket, patches, piercings, tattoos, punk rock,chaotic, DIY, gritty, raw, putrid, decay, dark circles, angry faces, spikes, fanzines, underground band posters, symbols of anarchy, chaososphere, acab",
+    "anarcho_punk": "anarcho-punk,rebel, leather jacket, patches, piercings, tattoos, punk rock, chaotic, DIY, gritty, raw, putrid, decay, dark circles, angry faces, spikes, fanzines, underground band posters, symbols of anarchy, chaosphere, acab",
     "chaos_magick": "Esoteric sigils, occult symbolism, ritualistic elements, astral planes, controlled chaos. A blend of ancient mysticism and modern rebellion, where intent shapes reality. Dark, mysterious, and powerful.",
     "cypherpunk": "Digital anonymity, cryptography, glitchy terminal screens, dark web aesthetic, hooded figures in shadows, flowing green code. A vision of fighting for privacy and freedom in a dystopian digital age. The aesthetic of the anonymous hacker resisting surveillance.",
     "post-anarchist": "Abstract concepts, deconstructed symbols, philosophical undertones, rhizomatic structures, questioning power in all its forms. A more academic and introspective take on anarchy, focusing on fluidity and anti-dogmatism.",
