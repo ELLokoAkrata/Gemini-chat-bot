@@ -1,9 +1,6 @@
 # src/prompt_engineering.py
 import logging
 
-# --- Core Aesthetic ---
-CORE_AESTHETIC = "a fusion style of anarcho-punk, psycho-rebel, dream-punk, street hacker, DIY, gritty, raw, chaotic"
-
 # --- Dynamic Modifiers ---
 # These can be controlled by sliders in the UI (e.g., mapping a 0-1 float to these keys)
 GLITCH_LEVELS = {
@@ -23,6 +20,7 @@ CHAOS_LEVELS = {
 }
 
 ART_STYLES = {
+    "none": "no specific art style, raw user input",
     "fusion": "hyperdetailed render, ink and marker textures, digital painting",
     "photorealistic": "hyperrealistic, 8k, detailed, photorealistic render",
     "sketch": "raw ink and marker sketch, cross-hatching, gritty lines, raw textures, raw lines, frenetic energy",
@@ -51,6 +49,23 @@ EMOJI_GRIMOIRE = {
     "🔪": "a knife, blade, danger, sharp, cutting edge, violence",
     "💥": "explosion, impact, breakthrough, sudden change",
     "🍄": "mushroom, psychedelic trip, nature, fungus, magic mushrooms",
+    "🌿": "cannabis leaf, marijuana, herb, nature, relaxation, plant-based",
+    "🍺": "beer mug, ale, celebration, social gathering, tavern"
+}
+
+# --- Core Aesthetics Grimoire ---
+CORE_AESTHETICS = {
+    "none": "no specific core aesthetic, raw user input",
+    "anarcho_punk": "anarcho-punk,rebel, leather jacket, patches, piercings, tattoos, punk rock,chaotic, DIY, gritty, raw, putrid, decay, dark circles, angry faces, spikes, fanzines, underground band posters, symbols of anarchy, chaososphere, acab",
+    "chaos_magick": "Esoteric sigils, occult symbolism, ritualistic elements, astral planes, controlled chaos. A blend of ancient mysticism and modern rebellion, where intent shapes reality. Dark, mysterious, and powerful.",
+    "cypherpunk": "Digital anonymity, cryptography, glitchy terminal screens, dark web aesthetic, hooded figures in shadows, flowing green code. A vision of fighting for privacy and freedom in a dystopian digital age. The aesthetic of the anonymous hacker resisting surveillance.",
+    "post-anarchist": "Abstract concepts, deconstructed symbols, philosophical undertones, rhizomatic structures, questioning power in all its forms. A more academic and introspective take on anarchy, focusing on fluidity and anti-dogmatism.",
+    "anarcho-syndicalist": "Collective action, solidarity, workers' symbols (gears, fists, wheat), bold propaganda poster style. Focus on community, mutual aid, and organized labor as a revolutionary force. Hopeful, powerful, and united.",
+    "eco-anarchist": "Nature reclaiming urban spaces, overgrown ruins, DIY solarpunk technology, feral aesthetics. A world where humanity lives in harmony with a wild, untamed ecosystem. Lush, green, and resilient.",
+    "insurrectionary": "Explosive energy, street conflict, masked and hooded figures, graffiti tags, shattered glass, a sense of immediate and uncompromising action. The aesthetic of the riot and the direct confrontation with power. Urgent, raw, and chaotic.",
+    "anarcho-vaporwave": "The ruins of digital capitalism. Glitchy, nostalgic visuals of abandoned malls and forgotten web 1.0 interfaces, reclaimed by squatters and hackers. A critique of consumer culture using its own decaying aesthetic. Surreal, melancholic, and deeply subversive.",
+    "cyber_gothic": "dark, futuristic, neo-gothic, tech-noir, dystopian, melancholic, advanced, intricate details",
+    "existential_void": "minimalist, abstract, dark, philosophical, empty spaces, stark contrasts, introspective"
 }
 
 def translate_emojis(text: str) -> str:
@@ -64,7 +79,7 @@ def get_level_from_value(value: float, levels: list) -> str:
     index = int(value * (len(levels) - 1))
     return levels[index]
 
-def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: float = 0.6, style: str = "fusion", use_core_aesthetic: bool = True) -> str:
+def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: float = 0.6, style: str = "fusion", selected_core_aesthetic: str = "anarcho_punk") -> str:
     """
     Dynamically builds a prompt based on user input and creative parameters.
     """
@@ -85,19 +100,30 @@ def engineer_prompt(user_input: str, glitch_value: float = 0.4, chaos_value: flo
     glitch_modifier = GLITCH_LEVELS[glitch_level_key]
     chaos_modifier = CHAOS_LEVELS[chaos_level_key]
     style_modifier = ART_STYLES.get(style, ART_STYLES["fusion"])
+    
+    # Obtener la descripción de la estética central
+    core_aesthetic_description = CORE_AESTHETICS.get(selected_core_aesthetic, "")
+
 
     # 4. Assemble the final prompt
     prompt_parts = [
-        f"The user's vision is: '{translated_prompt}'.",
-        f"Artistic style: {style_modifier}, {chaos_modifier}, {glitch_modifier}.",
-        "The final image must be a high-quality, visually striking piece of art."
+        f"The user's vision is: '{translated_prompt}'."
     ]
 
-    if use_core_aesthetic:
-        prompt_parts.insert(1, f"Core aesthetic: {CORE_AESTHETIC}.")
-        prompt_parts.append("Interpret the user's vision through the lens of the core aesthetic. Be creative, chaotic, and bold.")
-        prompt_parts[3] = "The final image must be a high-quality, visually striking piece of underground DIY generative art of anarchy and chaos." # Make it more specific again
+    # Solo añadir modificadores si no estamos en modo "raw"
+    if style != "none":
+        prompt_parts.append(f"Artistic style: {style_modifier}, {chaos_modifier}, {glitch_modifier}.")
     
+    prompt_parts.append("The final image must be a high-quality, visually striking piece of art.")
+
+    if core_aesthetic_description and selected_core_aesthetic != "none": # Si se eligió una estética central
+        prompt_parts.insert(1, f"Core aesthetic: {core_aesthetic_description}.")
+        prompt_parts.append("Interpret the user's vision through the lens of the core aesthetic. Be creative, chaotic, and bold.")
+        # Ajustar el índice del prompt final según si se añadió el estilo
+        final_image_prompt_index = 2 if style == "none" else 3
+        prompt_parts[final_image_prompt_index] = "The final image must be a high-quality, visually striking piece of underground DIY generative art of anarchy and chaos."
+
+
     final_prompt = "\n".join(prompt_parts)
     
     logging.info(f"Engineered Prompt: {final_prompt}")

@@ -13,7 +13,7 @@ from src.firebase_utils import (
     increment_daily_count
 )
 from src.gemini_utils import initialize_genai_client, generate_image_from_prompt
-from src.prompt_engineering import engineer_prompt, ART_STYLES
+from src.prompt_engineering import engineer_prompt, ART_STYLES, CORE_AESTHETICS
 from src.chat_logic import initialize_chat_client, stream_chat_response
 from src.ui_components import (
     display_image_with_expander,
@@ -27,18 +27,33 @@ def show_generation_controls():
     """Muestra los sliders de control en la barra lateral y devuelve sus valores."""
     st.sidebar.header("🌀 Parámetros de Creación 🌀")
     
-    use_core_aesthetic = st.sidebar.checkbox(
-        "Mantener Estética Central", 
-        value=True, 
-        help="Actívalo para fusionar tu estilo con la temática anarco-punk. Desactívalo para un estilo puro."
+    use_raw_mode = st.sidebar.checkbox(
+        "Modo RAW (Sin Estilos)", 
+        value=False, 
+        help="Actívalo para ignorar la Estética Central y el Estilo Artístico, usando solo tu prompt."
+    )
+
+    # Nuevo selectbox para elegir la estética central
+    selected_core_aesthetic = st.sidebar.selectbox(
+        "Estética Central 🧠",
+        options=list(CORE_AESTHETICS.keys()),
+        index=0, # Dejar que 'none' sea el default
+        help="Elige la estética filosófica y visual principal para la generación.",
+        disabled=use_raw_mode
     )
 
     art_style = st.sidebar.selectbox(
         "Estilo Artístico 🎨",
         options=list(ART_STYLES.keys()),
-        index=0, # 'fusion' por defecto
-        help="Elige el estilo visual principal para la imagen."
+        index=0, # Dejar que 'none' sea el default
+        help="Elige el estilo visual principal para la imagen.",
+        disabled=use_raw_mode
     )
+
+    # Si el modo RAW está activo, forzamos los valores a 'none'
+    if use_raw_mode:
+        selected_core_aesthetic = "none"
+        art_style = "none"
 
     glitch_value = st.sidebar.slider(
         "Nivel de Glitch 藝術", 0.0, 1.0, 0.4, 0.05,
@@ -62,7 +77,7 @@ def show_generation_controls():
         "Top-K (Diversidad)", 1, 50, 40, 1,
         help="Limita la selección de tokens a los K más probables. Ajusta la diversidad de la salida."
     )
-    return use_core_aesthetic, art_style, glitch_value, chaos_value, temperature, top_p, top_k
+    return selected_core_aesthetic, art_style, glitch_value, chaos_value, temperature, top_p, top_k
 
 def setup_page():
     """Configura la página de Streamlit."""
@@ -125,7 +140,7 @@ def setup_page():
 
 def handle_image_processing(
     client, user_prompt, user_uuid,
-    use_core_aesthetic, art_style, glitch_value, chaos_value, temperature, top_p, top_k,
+    selected_core_aesthetic, art_style, glitch_value, chaos_value, temperature, top_p, top_k,
     original_image: Image.Image = None
 ):
     """
@@ -159,7 +174,7 @@ def handle_image_processing(
         style=art_style,
         glitch_value=glitch_value,
         chaos_value=chaos_value,
-        use_core_aesthetic=use_core_aesthetic
+        selected_core_aesthetic=selected_core_aesthetic
     )
     processed_image = generate_image_from_prompt(
         client=client,
@@ -224,7 +239,7 @@ def run_app():
             show_user_info()
             st.markdown("---")
             # Obtener los valores de los sliders
-            use_core, art_style, glitch, chaos, temp, top_p, top_k = show_generation_controls()
+            core_aesthetic, art_style, glitch, chaos, temp, top_p, top_k = show_generation_controls()
 
         user_uuid = st.session_state.get("user_uuid")
         tab1, tab2, tab3 = st.tabs(["🎨 Generar", "🔄 Transmutar", "🔥 Psycho-Chat"])
@@ -249,7 +264,7 @@ def run_app():
                     else:
                         handle_image_processing(
                             image_client, prompt_input, user_uuid,
-                            use_core, art_style, glitch, chaos, temp, top_p, top_k
+                            core_aesthetic, art_style, glitch, chaos, temp, top_p, top_k
                         )
 
             # Botón de descarga solo si una generación RECIENTE está lista
@@ -316,7 +331,7 @@ def run_app():
                     if original_image:
                         handle_image_processing(
                             image_client, mod_prompt, user_uuid,
-                            use_core, art_style, glitch, chaos, temp, top_p, top_k,
+                            core_aesthetic, art_style, glitch, chaos, temp, top_p, top_k,
                             original_image=original_image
                         )
                         if "last_modified_image" in st.session_state:
