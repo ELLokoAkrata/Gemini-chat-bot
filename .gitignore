@@ -42,3 +42,6 @@ out_direct.wav
 
 # Cursor files
 .cursor/
+
+# Historial de prompts del generador de videos
+prompt_history.json

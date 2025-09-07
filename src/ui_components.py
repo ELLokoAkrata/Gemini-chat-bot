@@ -14,9 +14,14 @@ def generate_filename(is_modified: bool = False):
 def display_image_with_expander(image, caption):
     """
     Muestra una imagen centrada con un expander para verla en tamaño completo.
+    Trunca el caption si es muy largo para mantener la UI limpia.
     """
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # Truncar el caption si excede el límite
+        if len(caption) > 150:
+            caption = caption[:150] + "..."
+            
         st.image(
             image=image,
             caption=caption,
