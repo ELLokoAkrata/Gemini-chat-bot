@@ -14,7 +14,12 @@ from src.firebase_utils import (
 )
 from src.gemini_utils import initialize_genai_client, generate_image_from_prompt
 from src.prompt_engineering import engineer_prompt, ART_STYLES, CORE_AESTHETICS
-from src.chat_logic import initialize_chat_client, stream_chat_response
+from src.chat_logic import (
+    initialize_chat_client, 
+    stream_chat_response,
+    create_chat_interface,
+    handle_chat_interaction
+)
 from src.ui_components import (
     display_image_with_expander,
     generate_filename,
@@ -117,17 +122,82 @@ def setup_page():
         h1, h2, h3 {
             text-align: center !important;
         }
-        [data-testid="stVerticalBlock"] > [data-testid="stContainer"] {
+        
+        /* SOLO APLICAR BORDES VERDES A CONTENEDORES ESPECÍFICOS, NO A CHAT */
+        .stTabs [data-testid="stVerticalBlock"] > [data-testid="stContainer"] {
             border: 1px solid #00ff00;
             border-radius: 10px;
             box-shadow: 0 0 10px #00ff00;
         }
-        .stChatMessage > div > div > div { font-size: 18px !important; line-height: 1.6 !important; }
-        .stChatMessage[data-testid="user"] > div > div > div { font-size: 20px !important; font-weight: 600 !important; color: #ff6b6b !important; }
-        .stChatMessage[data-testid="assistant"] > div > div > div { font-size: 19px !important; font-weight: 500 !important; color: #00ff00 !important; }
-        .stChatInput > div > div > div > div > div > div > div { font-size: 18px !important; padding: 15px !important; }
-        .stChatInput input::placeholder { font-size: 18px !important; color: #666 !important; }
-        .stChatMessage { margin-bottom: 20px !important; }
+        
+        /* CONTENEDORES DE CHAT PERSONALIZADOS */
+        /* selector base para todos los chat messages */
+        [data-testid="stChatMessage"] {
+          border-radius: 15px;
+          margin: 10px 0 !important;
+          padding: 8px !important;
+          overflow: hidden !important;
+        }
+
+        /* Mensajes del ASISTENTE (bot) - detecta avatar assistant */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+          border: 2px solid #ffaa00 !important;
+          background-color: #2a2a1a !important;
+          box-shadow: 0 0 15px rgba(255,170,0,0.25) !important;
+          color: #ffffaa !important;
+        }
+
+        /* Mensajes del USUARIO - detecta avatar user */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+          border: 2px solid #ff4444 !important;
+          background-color: #2a1a1a !important;
+          box-shadow: 0 0 15px rgba(255,68,68,0.25) !important;
+          color: #ffaaaa !important;
+        }
+
+        /* Forzar color del markdown dentro de los bubbles */
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stMarkdownContainer"] * {
+          color: #ffffaa !important;
+        }
+        [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stMarkdownContainer"] * {
+          color: #ffaaaa !important;
+        }
+        
+        /* Iconos personalizados */
+        .stChatMessage[data-testid="user"] .stChatMessage__avatar {
+            background-color: #ff4444 !important;
+            border-radius: 50% !important;
+        }
+        
+        .stChatMessage[data-testid="assistant"] .stChatMessage__avatar {
+            background-color: #ffaa00 !important;
+            border-radius: 50% !important;
+        }
+        
+        /* Texto dentro de los contenedores */
+        .stChatMessage[data-testid="user"] .stMarkdown {
+            color: #ffaaaa !important;
+        }
+        
+        .stChatMessage[data-testid="assistant"] .stMarkdown {
+            color: #ffffaa !important;
+        }
+        
+        /* Input del chat */
+        .stChatInput > div > div > div > div > div > div > div {
+            font-size: 18px !important;
+            padding: 15px !important;
+            border: 2px solid #00ff00 !important;
+            border-radius: 10px !important;
+            background-color: #1a1a1a !important;
+        }
+        .stChatInput input::placeholder { 
+            font-size: 18px !important; 
+            color: #666 !important; 
+        }
+        .stChatMessage { 
+            margin-bottom: 20px !important; 
+        }
         </style>
     """, unsafe_allow_html=True)
     st.title("🔥 Akelarre Generativo with Psycho-Bot 🔥")
@@ -363,31 +433,28 @@ def run_app():
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
 
-            # Respuesta del bot si el último no fue del asistente
-            if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
-                with st.chat_message("assistant"):
-                    processing_placeholder = st.empty()
-                    processing_placeholder.markdown("🧠 *El abismo está procesando su demencia interna...*")
+            # Respuesta del bot si el último mensaje fue del usuario
+            if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+                # Crea explícitamente el contenedor del mensaje del asistente
+                assistant_msg = st.chat_message("assistant")      # <- DeltaGenerator ligado al bubble
+                placeholder = assistant_msg.markdown("")         # <- marcador DENTRO del bubble
 
-                    response_stream = stream_chat_response(
-                        st.session_state.chat_client,
-                        st.session_state.messages
-                    )
+                # Mostrar indicador de procesando
+                placeholder.markdown("🔄 **Procesando internamente...**")
 
-                    full_response_text = ""
-                    response_area = st.empty()
+                def update_response(text_chunk):
+                    # Actualiza el mismo marcador (estará dentro del bubble amarillo)
+                    placeholder.markdown(text_chunk)
 
-                    for chunk in response_stream:
-                        if hasattr(chunk, "text") and chunk.text:
-                            full_response_text += chunk.text
-                            response_area.markdown(full_response_text)
-
-                    processing_placeholder.empty()
-
-                # Guardar respuesta en historial
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": full_response_text}
+                # Llamada al stream que recibe el callback (no crear más st.chat_message dentro del callback)
+                full_response_text = stream_chat_response(
+                    st.session_state.chat_client,
+                    st.session_state.messages,
+                    callback=update_response
                 )
+
+                # Guarda la respuesta final en el historial
+                st.session_state.messages.append({"role": "assistant", "content": full_response_text})
 
             # Input del chat
             if prompt := st.chat_input("ESCÚPEME TU VENENO...", key="psycho_chat_input"):
@@ -395,7 +462,7 @@ def run_app():
                     st.session_state.messages.append({"role": "user", "content": prompt})
                     st.rerun()
 
-    st.markdown("---")
-    st.caption("Ψ Sistema EsquizoAI 3.3.3 | Akelarre Generativo")
+        st.markdown("---")
+        st.caption("Ψ Sistema EsquizoAI 3.3.3 | Akelarre Generativo")
 
 

@@ -3,6 +3,11 @@
 import streamlit as st
 from google import genai
 from google.genai import types
+import logging
+from datetime import datetime
+from typing import List, Dict, Any, Optional, Callable
+import json
+import os
 
 # El Grito Primordial: El manifiesto que define la personalidad del Psycho-Bot.
 SYSTEM_PROMPT = """
@@ -59,10 +64,15 @@ def initialize_chat_client():
     """
     return genai.Client(api_key=st.secrets["GOOGLE_API_KEY"])
 
-def stream_chat_response(client, history):
+def stream_chat_response(client, history, callback: Optional[Callable[[str], None]] = None):
     """
     Envía el historial de chat al modelo y devuelve la respuesta como un stream,
     utilizando la sintaxis correcta para system_instruction.
+    
+    Args:
+        client: Cliente de GenAI
+        history: Historial de mensajes
+        callback: Función callback para actualizar la UI en tiempo real (como MetanoIA)
     """
     model_name = "gemini-2.5-flash"
 
@@ -104,5 +114,84 @@ def stream_chat_response(client, history):
         config=generation_config,
     )
 
-    # Devolver el stream directamente, no iterar aquí
-    return response_stream
+    # Si hay callback, procesar el stream y llamar al callback (como MetanoIA)
+    if callback:
+        full_response_text = ""
+        for chunk in response_stream:
+            if hasattr(chunk, "text") and chunk.text:
+                full_response_text += chunk.text
+                callback(full_response_text)  # ← Callback en cada chunk
+        return full_response_text
+    else:
+        # Devolver el stream directamente para compatibilidad con código existente
+        return response_stream
+
+def create_chat_interface():
+    """
+    Crea la interfaz de chat usando el patrón de MetanoIA con contenedores dinámicos.
+    
+    Returns:
+        tuple: (model_info_container, response_container, update_callback)
+    """
+    # Contenedor para mostrar información del modelo
+    model_info_container = st.empty()
+    
+    # Contenedor para la respuesta del chat
+    response_container = st.empty()
+    
+    def update_callback(text: str):
+        """
+        Callback para actualizar la respuesta en tiempo real.
+        Limpia el mensaje de "generando..." y actualiza el contenido.
+        """
+        model_info_container.empty()  # Limpia el mensaje de "generando..."
+        response_container.markdown(text)  # Actualiza el contenido de la respuesta
+    
+    return model_info_container, response_container, update_callback
+
+def display_processing_message(model_info_container: st.empty, model_name: str = "Psycho-Bot"):
+    """
+    Muestra el mensaje de procesamiento en el contenedor de información del modelo.
+    
+    Args:
+        model_info_container: Contenedor de Streamlit para mostrar información
+        model_name: Nombre del modelo que se está usando
+    """
+    model_info_container.info(f"🧠 {model_name} está procesando su demencia interna...")
+
+def handle_chat_interaction(client, history, model_info_container: st.empty, response_container: st.empty):
+    """
+    Maneja la interacción del chat usando el patrón de MetanoIA.
+    
+    Args:
+        client: Cliente de GenAI
+        history: Historial de mensajes
+        model_info_container: Contenedor para información del modelo
+        response_container: Contenedor para la respuesta
+        
+    Returns:
+        str: Respuesta completa del chat
+    """
+    # Mostrar mensaje de procesamiento
+    display_processing_message(model_info_container)
+    
+    # Crear callback para actualizar la respuesta
+    def update_callback(text: str):
+        model_info_container.empty()
+        response_container.markdown(text)
+    
+    # Generar respuesta con callback
+    full_response = stream_chat_response(client, history, callback=update_callback)
+    
+    return full_response
+
+def display_chat_history(messages):
+    """
+    Muestra el historial de mensajes del chat con contenedores.
+    
+    Args:
+        messages: Lista de mensajes del historial
+    """
+    for message in messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
