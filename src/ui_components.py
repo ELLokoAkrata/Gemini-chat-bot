@@ -30,6 +30,19 @@ def display_image_with_expander(image, caption):
         )
         st.caption("🔍 Haz clic en el cuadrito de full screen para ver la imagen en tamaño original")
 
+def show_chat_welcome_message():
+    """
+    Muestra un mensaje de bienvenida en la pestaña de chat cuando está vacía.
+    """
+    st.markdown("""
+    <div style="text-align: center; margin-top: 50px; padding: 20px;">
+        <h2>🔥 Inicia tu Diálogo con el Abismo 🔥</h2>
+        <p>El Psycho-Bot espera tus órdenes.</p>
+        <p>Puedes pedirle que te ayude a crear prompts para la generación de imágenes, que te explique los estilos artísticos, o simplemente conversar sobre el caos y la creación.</p>
+        <p><b>Escribe tu primer mensaje abajo para despertar a la bestia.</b></p>
+    </div>
+    """, unsafe_allow_html=True)
+
 def show_login_form(db):
     """
     Muestra el formulario de login en la barra lateral y gestiona la lógica de autenticación.

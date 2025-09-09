@@ -1,3 +1,4 @@
+# src/main_ui.py
 import streamlit as st
 from PIL import Image
 import os
@@ -16,16 +17,15 @@ from src.gemini_utils import initialize_genai_client, generate_image_from_prompt
 from src.prompt_engineering import engineer_prompt, ART_STYLES, CORE_AESTHETICS
 from src.chat_logic import (
     initialize_chat_client, 
-    stream_chat_response,
-    create_chat_interface,
-    handle_chat_interaction
+    stream_chat_response
 )
 from src.ui_components import (
     display_image_with_expander,
     generate_filename,
     show_login_form,
     show_user_info,
-    show_welcome_message
+    show_welcome_message,
+    show_chat_welcome_message  # <-- RESUCITAMOS LA BIENVENIDA
 )
 
 def show_generation_controls():
@@ -428,35 +428,43 @@ def run_app():
             if "messages" not in st.session_state:
                 st.session_state.messages = []
 
-            # Mostrar historial de mensajes
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+            # Si el chat está vacío, mostrar el mensaje de bienvenida.
+            if not st.session_state.messages:
+                show_chat_welcome_message()
+            
+            # Si hay mensajes, mostrar el contenedor del chat.
+            else:
+                chat_container = st.container(border=True)
+                with chat_container:
+                    for message in st.session_state.messages:
+                        with st.chat_message(message["role"]):
+                            st.markdown(message["content"])
 
-            # Respuesta del bot si el último mensaje fue del usuario
-            if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-                # Crea explícitamente el contenedor del mensaje del asistente
-                assistant_msg = st.chat_message("assistant")      # <- DeltaGenerator ligado al bubble
-                placeholder = assistant_msg.markdown("")         # <- marcador DENTRO del bubble
+                    # Lógica de respuesta del bot, SIN SPINNER.
+                    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+                        with st.chat_message("assistant"):
+                            placeholder = st.empty()
+                            # 1. Mensaje de espera
+                            placeholder.markdown("El Abismo está sintonizando...")
 
-                # Mostrar indicador de procesando
-                placeholder.markdown("🔄 **Procesando internamente...**")
+                            # 2. Callback para el stream
+                            def update_response(text_chunk):
+                                placeholder.markdown(text_chunk + "▌")
 
-                def update_response(text_chunk):
-                    # Actualiza el mismo marcador (estará dentro del bubble amarillo)
-                    placeholder.markdown(text_chunk)
+                            # 3. Llamada al stream
+                            full_response = stream_chat_response(
+                                st.session_state.chat_client,
+                                st.session_state.messages,
+                                callback=update_response
+                            )
+                            
+                            # 4. Respuesta final
+                            placeholder.markdown(full_response)
+                            
+                        # 5. Guardar en historial
+                        st.session_state.messages.append({"role": "assistant", "content": full_response})
 
-                # Llamada al stream que recibe el callback (no crear más st.chat_message dentro del callback)
-                full_response_text = stream_chat_response(
-                    st.session_state.chat_client,
-                    st.session_state.messages,
-                    callback=update_response
-                )
-
-                # Guarda la respuesta final en el historial
-                st.session_state.messages.append({"role": "assistant", "content": full_response_text})
-
-            # Input del chat
+            # El input del chat siempre al final, fuera del else.
             if prompt := st.chat_input("ESCÚPEME TU VENENO...", key="psycho_chat_input"):
                 if prompt.strip():
                     st.session_state.messages.append({"role": "user", "content": prompt})
